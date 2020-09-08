@@ -128,7 +128,8 @@ def simulate(serial_interval, f):
         Graph = nx.barabasi_albert_graph(n,m)
         edges = np.array(Graph.edges) #shape=n,2
 
-        nodes_left = np.arange(n)
+
+
         #Initial nodes
         num_initial = 10
         picked_nodes = np.random.choice(n, num_initial)
@@ -142,9 +143,26 @@ def simulate(serial_interval, f):
         #Removed
         R = []
 
-        I.extend(picked_nodes)
+        #Initial infection
+        I.append(picked_nodes)
         #Simulate by connecting to the initial pick
-        for i in range(num_days):
+        num_days=100
+        for d in range(num_days):
+            #Add the previously picked nodes to S
+            I.append(picked_nodes)
+            #Loop through the susceptible groups
+            for i in range(len(I)):
+                igroup = I[i] #Get the infected group
+                inf_prob = len(igroup)*np.cumsum(serial_interval[:i]) #Probability of the selected nodes to be infected
+                inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
+                spread = np.random_choice(len(igroup),inf_nodes)
+                spread_nodes = inf_nodes[spread]
+                R.append(spread_nodes) #Remove the nodes that have issued their spread
+                I[i] = np.setdiff1d(igroup, spread_nodes)
+                pdb.set_trace()
+                for inode in igroup: #Get
+                    inode_connections = np.where((edges[:,0]==inode)|(edges[:,1]==inode))[0]
+
             #Get all connections for node n:
             for n in picked_nodes:
                 n_connections = np.where((test[:,0]==n)|(test[:,1]==n))[0]
