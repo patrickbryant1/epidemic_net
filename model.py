@@ -116,18 +116,43 @@ def read_and_format_data(datadir, outdir):
         plt.close()
         plt.plot(np.arange(len(serial_interval)),serial_interval)
         plt.savefig(outdir+'SI.png')
-        pdb.set_trace()
 
-        #Network
-        numnodes = 2385643
-        m = 5 #Number of edges to attach from a new node to existing nodes
-        G_barabasi = nx.barabasi_albert_graph(n,m)
+        return serial_interval, f
 
-
-def simulate():
+def simulate(serial_interval, f):
         '''Simulate epidemic development on a graph network.
         '''
+        #Network
+        n = 10000 #2385643, number of nodes
+        m = 5 #Number of edges to attach from a new node to existing nodes
+        Graph = nx.barabasi_albert_graph(n,m)
+        edges = np.array(Graph.edges) #shape=n,2
 
+        nodes_left = np.arange(n)
+        #Initial nodes
+        num_initial = 10
+        picked_nodes = np.random.choice(n, num_initial)
+        #Number of days
+        num_days=100
+
+        #Susceptible
+        S = []
+        #Infected
+        I = []
+        #Removed
+        R = []
+
+        I.extend(picked_nodes)
+        #Simulate by connecting to the initial pick
+        for i in range(num_days):
+            #Get all connections for node n:
+            for n in picked_nodes:
+                n_connections = np.where((test[:,0]==n)|(test[:,1]==n))[0]
+
+            #Nodes left
+            nodes_left = np.setdiff1d(nodes_left, picked_nodes)
+
+            pdb.set_trace()
 
         return out
 
@@ -137,6 +162,6 @@ datadir = args.datadir[0]
 outdir = args.outdir[0]
 
 #Read and format data
-read_and_format_data(datadir, outdir)
+serial_interval, f = read_and_format_data(datadir, outdir)
 #Simulate
-out = simulate(stan_data, stan_model, outdir)
+out = simulate(serial_interval, f)
