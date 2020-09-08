@@ -116,7 +116,7 @@ def read_and_format_data(datadir, outdir):
         plt.close()
         plt.plot(np.arange(len(serial_interval)),serial_interval)
         plt.savefig(outdir+'SI.png')
-
+        plt.close()
         return serial_interval, f
 
 def simulate(serial_interval, f):
@@ -134,51 +134,76 @@ def simulate(serial_interval, f):
         num_initial = 10
         picked_nodes = np.random.choice(n, num_initial)
         #Number of days
-        num_days=100
+        num_days=50
 
         #Susceptible
-        #The susceptible population is the remaining edges (nodes in the edges)
+        S = np.arange(n)
         #Infected
         I = []
-        inf_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
+        inf_days = [0] #Keep track of the infection days for each group
         #Removed
         R = []
-
+        num_removed = []
+        death_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
         #Initial infection
         I.append(picked_nodes)
         #Simulate by connecting to the initial pick
-        num_days=100
         for d in range(num_days):
+            prevR = len(R)
             #Loop through the infection groups
             for i in range(len(I)):
                 igroup = I[i] #Get the infected group
                 inf_days[i]+=1 #Add one day to the infection group
                 inf_prob = len(igroup)*np.sum(serial_interval[:inf_days[i]]) #Probability of the selected nodes to be infected
+                #This probability should be based on the total number of infections on a given day.
+                #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
+                #inf_nodes can then be chosen from all nodes on day d randomly.
                 inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
                 if inf_nodes>0: #If there are nodes that can spread the infection
                     spread = np.random.choice(len(igroup),inf_nodes)
                     spread_nodes = igroup[spread]
-                    R.append(spread_nodes) #Remove the nodes that have issued their spread
-                    #Nodes left in igroup
+
+                    #Nodes left in igroup - remove spread nodes
                     I[i] = np.setdiff1d(igroup, spread_nodes)
+                    #Get the new infections
                     new_infections = np.array([])
                     for inode in spread_nodes: #Get spread connections
                         inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
-                        new_infections = np.append(new_infections, inode_connections)
-                        #Remove from edges
-                        keep_i = np.where((edges[:,0]!=inode)&(edges[:,1]!=inode))
-                        edges = edges[keep_i]
+                        if len(inode_connections)>0:
+                            new_infections = np.append(new_infections, inode_connections)
+                            #Remove from edges
+                            edges = edges[edges[:,0]!=inode]
+                            edges = edges[edges[:,1]!=inode]
+                            R.append(inode)
+                    #Get only the unique nodes in the new infections
+                    new_infections = np.unique(new_infections)
                     I.append(new_infections) #append
+                    inf_days.append(0)
 
                 else:
                     continue
-                print(d, edges.shape[0])
 
-                if len(I)>len(inf_days):
-                    pdb.set_trace()
 
-            #Calculate the deaths
-            
+            num_removed.append(len(R)-prevR)
+            print(d, edges.shape[0], num_removed[d], len(R))
+        #Plot spread
+        num_removed = np.array(num_removed)
+        plt.plot(np.arange(d), 100*(num_removed[:d]/n))
+        plt.ylabel('% Infected')
+        plt.xlabel('Days since initial spread')
+        plt.savefig(outdir+'cases.png', format='png', dpi=300)
+        plt.close()
+
+        #Calculate deaths
+        deaths = np.zeros(num_days)
+        for di in range(1,num_days):
+            for dj in range(di):
+                deaths[di] += num_removed[dj]*f[di-dj]
+
+        plt.plot(np.arange(num_days), deaths)
+        plt.ylabel('Deaths')
+        plt.xlabel('Days since initial spread')
+        plt.savefig(outdir+'deaths.png', format='png', dpi=300)
         pdb.set_trace()
 
         return
