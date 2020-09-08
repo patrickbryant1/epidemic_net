@@ -137,9 +137,10 @@ def simulate(serial_interval, f):
         num_days=100
 
         #Susceptible
-        S = []
+        #The susceptible population is the remaining edges (nodes in the edges)
         #Infected
         I = []
+        inf_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
         #Removed
         R = []
 
@@ -148,31 +149,39 @@ def simulate(serial_interval, f):
         #Simulate by connecting to the initial pick
         num_days=100
         for d in range(num_days):
-            #Add the previously picked nodes to S
-            I.append(picked_nodes)
-            #Loop through the susceptible groups
+            #Loop through the infection groups
             for i in range(len(I)):
                 igroup = I[i] #Get the infected group
-                inf_prob = len(igroup)*np.cumsum(serial_interval[:i]) #Probability of the selected nodes to be infected
+                inf_days[i]+=1 #Add one day to the infection group
+                inf_prob = len(igroup)*np.sum(serial_interval[:inf_days[i]]) #Probability of the selected nodes to be infected
                 inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
-                spread = np.random_choice(len(igroup),inf_nodes)
-                spread_nodes = inf_nodes[spread]
-                R.append(spread_nodes) #Remove the nodes that have issued their spread
-                I[i] = np.setdiff1d(igroup, spread_nodes)
-                pdb.set_trace()
-                for inode in igroup: #Get
-                    inode_connections = np.where((edges[:,0]==inode)|(edges[:,1]==inode))[0]
+                if inf_nodes>0: #If there are nodes that can spread the infection
+                    spread = np.random.choice(len(igroup),inf_nodes)
+                    spread_nodes = igroup[spread]
+                    R.append(spread_nodes) #Remove the nodes that have issued their spread
+                    #Nodes left in igroup
+                    I[i] = np.setdiff1d(igroup, spread_nodes)
+                    new_infections = np.array([])
+                    for inode in spread_nodes: #Get spread connections
+                        inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
+                        new_infections = np.append(new_infections, inode_connections)
+                        #Remove from edges
+                        keep_i = np.where((edges[:,0]!=inode)&(edges[:,1]!=inode))
+                        edges = edges[keep_i]
+                    I.append(new_infections) #append
 
-            #Get all connections for node n:
-            for n in picked_nodes:
-                n_connections = np.where((test[:,0]==n)|(test[:,1]==n))[0]
+                else:
+                    continue
+                print(d, edges.shape[0])
 
-            #Nodes left
-            nodes_left = np.setdiff1d(nodes_left, picked_nodes)
+                if len(I)>len(inf_days):
+                    pdb.set_trace()
 
-            pdb.set_trace()
+            #Calculate the deaths
+            
+        pdb.set_trace()
 
-        return out
+        return
 
 #####MAIN#####
 args = parser.parse_args()
