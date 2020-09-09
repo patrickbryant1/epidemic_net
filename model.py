@@ -149,39 +149,49 @@ def simulate(serial_interval, f):
         I.append(picked_nodes)
         #Simulate by connecting to the initial pick
         for d in range(num_days):
-            prevR = len(R)
+            prevR = len(R) #The number of removed the previous day
             #Loop through the infection groups
+            group_lens = [] #group lens at day d
+            inf_prob = 0 #Infection probability at day d
             for i in range(len(I)):
                 igroup = I[i] #Get the infected group
                 inf_days[i]+=1 #Add one day to the infection group
-                inf_prob = len(igroup)*np.sum(serial_interval[:inf_days[i]]) #Probability of the selected nodes to be infected
-                #This probability should be based on the total number of infections on a given day.
-                #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
-                #inf_nodes can then be chosen from all nodes on day d randomly.
-                inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
-                if inf_nodes>0: #If there are nodes that can spread the infection
-                    spread = np.random.choice(len(igroup),inf_nodes)
-                    spread_nodes = igroup[spread]
+                inf_prob += len(igroup)*np.sum(serial_interval[:inf_days[i]]) #Probability of the selected nodes to be infected
+                group_lens.append(len(igroup))
 
-                    #Nodes left in igroup - remove spread nodes
-                    I[i] = np.setdiff1d(igroup, spread_nodes)
-                    #Get the new infections
-                    new_infections = np.array([])
-                    for inode in spread_nodes: #Get spread connections
-                        inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
-                        if len(inode_connections)>0:
-                            new_infections = np.append(new_infections, inode_connections)
-                            #Remove from edges
-                            edges = edges[edges[:,0]!=inode]
-                            edges = edges[edges[:,1]!=inode]
-                            R.append(inode)
-                    #Get only the unique nodes in the new infections
-                    new_infections = np.unique(new_infections)
-                    I.append(new_infections) #append
-                    inf_days.append(0)
+            #This probability should be based on the total number of infections on a given day.
+            #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
+            #inf_nodes can then be chosen from all nodes on day d randomly.
+            inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
+            num_infected_day = np.sum(group_lens)
+            spread_nodes = np.random.choice(num_infected_day, inf_nodes)
 
-                else:
-                    continue
+            if inf_nodes>0: #If there are nodes that can spread the infection
+                pdb.set_trace()
+                for inode in spread_nodes:
+                spread = np.random.choice(len(igroup),inf_nodes)
+                spread_nodes = igroup[spread]
+
+                #Nodes left in igroup - remove spread nodes
+                I[i] = np.setdiff1d(igroup, spread_nodes)
+                #Get the new infections
+                new_infections = np.array([])
+                for inode in spread_nodes: #Get spread connections
+                    inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
+                    if len(inode_connections)>0:
+                        new_infections = np.append(new_infections, inode_connections)
+                        #Remove from edges
+                        edges = edges[edges[:,0]!=inode]
+                        edges = edges[edges[:,1]!=inode]
+                        R.append(inode)
+                #Get only the unique nodes in the new infections
+                new_infections = np.unique(new_infections)
+                #Check if the new infections are in the S - otherwise the nodes may already be infected
+                I.append(new_infections) #append
+                inf_days.append(0)
+
+            else:
+                continue
 
 
             num_removed.append(len(R)-prevR)
@@ -196,8 +206,8 @@ def simulate(serial_interval, f):
 
         #Calculate deaths
         deaths = np.zeros(num_days)
-        for di in range(1,num_days):
-            for dj in range(di):
+        for di in range(1,num_days): #Loop through all days
+            for dj in range(di): #Integrate by summing the num_removed*f[]
                 deaths[di] += num_removed[dj]*f[di-dj]
 
         plt.plot(np.arange(num_days), deaths)
