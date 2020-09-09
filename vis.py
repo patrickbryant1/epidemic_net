@@ -18,6 +18,7 @@ import pdb
 #Arguments for argparse module:
 parser = argparse.ArgumentParser(description = '''Simulate the epidemic development of Stockholm on a graph network''')
 
+parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
 parser.add_argument('--resultdf', nargs=1, type= str, default=sys.stdin, help = 'Path to results.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
@@ -43,10 +44,15 @@ def plot_epidemic(x,y,xlabel,ylabel,title,outname):
 
 #####MAIN#####
 args = parser.parse_args()
+datadir = args.datadir[0]
 resultdf= pd.read_csv(args.resultdf[0])
 n = args.n[0]
 outdir = args.outdir[0]
 
+#Get stockholm csv
+stockholm_csv = pd.read_csv(datadir+'stockholm.csv')
+
+#Results
 num_days = len(resultdf)
 num_new_infections = np.array(resultdf['num_new_infections'])
 deaths = np.array(resultdf['deaths'])

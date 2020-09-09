@@ -68,7 +68,8 @@ def read_and_format_data(datadir, outdir):
         '''Read in and format all data needed for the model
         N = number of days to model
         '''
-        N=300
+        stockholm_csv = pd.read_csv(datadir+'stockholm.csv')
+        N=len(stockholm_csv)*7
 
         #Get epidemic data
         epidemic_data = pd.read_csv(datadir+'stockholm.csv')
@@ -116,9 +117,9 @@ def read_and_format_data(datadir, outdir):
         # plt.plot(np.arange(len(serial_interval)),serial_interval)
         # plt.savefig(outdir+'SI.png')
         # plt.close()
-        return serial_interval, f
+        return serial_interval, f, N
 
-def simulate(serial_interval, f, outdir, n, m):
+def simulate(serial_interval, f, N, outdir, n, m):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -134,7 +135,7 @@ def simulate(serial_interval, f, outdir, n, m):
         num_initial = 10
         initial_infections = np.random.choice(n, num_initial)
         #Number of days
-        num_days=100
+        num_days=N
 
         #Susceptible
         S = np.arange(n)
@@ -233,6 +234,6 @@ datadir = args.datadir[0]
 outdir = args.outdir[0]
 
 #Read and format data
-serial_interval, f = read_and_format_data(datadir, outdir)
+serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
-simulate(serial_interval, f, outdir, n, m)
+simulate(serial_interval, f, N, outdir, n, m)
