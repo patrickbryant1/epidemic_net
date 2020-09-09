@@ -123,7 +123,7 @@ def simulate(serial_interval, f, edges):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
-        n = 10000 #2385643, number of nodes
+        n = 2385643 # number of nodes
         m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
         Graph = nx.barabasi_albert_graph(n,m)
         edges = np.array(Graph.edges) #shape=n,2
@@ -204,19 +204,10 @@ def simulate(serial_interval, f, edges):
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
 
-
         #Plot spread
         num_new_infections = np.array(num_new_infections)
-        plt.plot(np.arange(num_days), 100*(num_new_infections/n))
-        plt.ylabel('% Infected')
-        plt.xlabel('Days since initial spread')
-        plt.savefig(outdir+'cases.png', format='png', dpi=300)
-        plt.close()
-
-        #Plot spread
-        num_new_infections = np.array(num_new_infections)
-        plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day',outdir+'cases.png')
-        plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected',outdir+'cumulative_cases.png')
+        plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day', 'Daily cases', outdir+'cases.png')
+        plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', outdir+'cumulative_cases.png')
 
         #Calculate deaths
         deaths = np.zeros(num_days)
@@ -224,8 +215,10 @@ def simulate(serial_interval, f, edges):
             for dj in range(di): #Integrate by summing the num_removed*f[]
                 deaths[di] += num_new_infections[dj]*f[di-dj]
         #Plot deaths
-        plot_epidemic(np.arange(num_days), deaths,'Days since initial spread','Deaths',outdir+'deaths.png')
+        plot_epidemic(np.arange(num_days), deaths,'Days since initial spread','Deaths','Daily deaths', outdir+'deaths.png')
 
+        #Plot the number removed - the ones that have issued spread
+        plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders', outdir+'active_spreaders.png')
         #Save results
         result_df = pd.DataFrame()
         result_df['day'] = np.arange(num_days)
@@ -237,7 +230,7 @@ def simulate(serial_interval, f, edges):
 
         return
 
-def plot_epidemic(x,y,xlabel,ylabel,outname):
+def plot_epidemic(x,y,xlabel,ylabel,title,outname):
     '''Plot the epidemic
     '''
     #Set font size
@@ -246,6 +239,7 @@ def plot_epidemic(x,y,xlabel,ylabel,outname):
     ax.plot(x,y)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    ax.set_title(title)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     fig.tight_layout()
