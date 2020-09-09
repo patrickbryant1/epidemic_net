@@ -135,7 +135,7 @@ def simulate(serial_interval, f, edges):
         num_initial = 10
         initial_infections = np.random.choice(n, num_initial)
         #Number of days
-        num_days=50
+        num_days=100
 
         #Susceptible
         S = np.arange(n)
@@ -155,7 +155,7 @@ def simulate(serial_interval, f, edges):
         S = np.setdiff1d(S,initial_infections)
         #Simulate by connecting to the initial pick
         #The other model saves all infections and use them for multiplication with the SI
-        print('day edges num_infected num_new_infections num_removed num_new_removed')
+        print('day edges num_spread_nodes num_infected num_new_infections num_removed num_new_removed')
         for d in range(1,num_days):
             prevR = len(R) #The number of removed the previous day
             new_infections=[]
@@ -163,6 +163,9 @@ def simulate(serial_interval, f, edges):
             #This probability should be based on the total number of infections on a given day.
             #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
             #inf_nodes can then be chosen from all nodes on day d randomly.
+            #Is there problems with selecting this way? The nodes selected earlier should have lower probability of being selected
+            #for spread later in the epidemic. This way the probability may increase (?). Although with more infectious nodes
+            #the probability of selection likely goes down.
             inf_prob = 0 #Infection probability at day d
             for prev_day in range(d):
                 inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
@@ -199,7 +202,7 @@ def simulate(serial_interval, f, edges):
             num_new_infections.append(len(new_infections))
             num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
             remaining_edges.append(edges.shape[0])
-            print(d, remaining_edges[d], num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
+            print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
 
 
         #Plot spread
@@ -212,23 +215,16 @@ def simulate(serial_interval, f, edges):
 
         #Plot spread
         num_new_infections = np.array(num_new_infections)
-        plt.plot(np.arange(num_days), 100*(num_new_infections/n))
-        plt.ylabel('% Infected')
-        plt.xlabel('Days since initial spread')
-        plt.savefig(outdir+'cases.png', format='png', dpi=300)
-        plt.close()
+        plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day',outdir+'cases.png')
+        plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected',outdir+'cumulative_cases.png')
 
         #Calculate deaths
         deaths = np.zeros(num_days)
         for di in range(1,num_days): #Loop through all days
             for dj in range(di): #Integrate by summing the num_removed*f[]
                 deaths[di] += num_new_infections[dj]*f[di-dj]
-
-        plt.plot(np.arange(num_days), deaths)
-        plt.ylabel('Deaths')
-        plt.xlabel('Days since initial spread')
-        plt.savefig(outdir+'deaths.png', format='png', dpi=300)
-
+        #Plot deaths
+        plot_epidemic(np.arange(num_days), deaths,'Days since initial spread','Deaths',outdir+'deaths.png')
 
         #Save results
         result_df = pd.DataFrame()
@@ -244,7 +240,19 @@ def simulate(serial_interval, f, edges):
 def plot_epidemic(x,y,xlabel,ylabel,outname):
     '''Plot the epidemic
     '''
-    
+    #Set font size
+    matplotlib.rcParams.update({'font.size': 7})
+    fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
+    ax.plot(x,y)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(outname, format='png', dpi=300)
+    plt.close()
+
+
 #####MAIN#####
 args = parser.parse_args()
 datadir = args.datadir[0]
