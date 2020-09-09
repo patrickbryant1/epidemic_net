@@ -173,16 +173,13 @@ def simulate(serial_interval, f):
             spread_nodes = np.random.choice(num_infected_day[d], inf_nodes)
 
             if inf_nodes>0: #If there are nodes that can spread the infection
-                pdb.set_trace()
-                #for inode in spread_nodes:
-                spread = np.random.choice(len(igroup),inf_nodes)
-                spread_nodes = igroup[spread]
 
-                #Nodes left in igroup - remove spread nodes
-                I[i] = np.setdiff1d(igroup, spread_nodes)
                 #Get the new infections
                 new_infections = np.array([])
                 for inode in spread_nodes: #Get spread connections
+                    for i in range(len(I)): #Go through all the infectious groups
+                    #I should just add all the infected nodes into one group for each day instead?
+
                     inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
                     if len(inode_connections)>0:
                         new_infections = np.append(new_infections, inode_connections)
@@ -190,6 +187,9 @@ def simulate(serial_interval, f):
                         edges = edges[edges[:,0]!=inode]
                         edges = edges[edges[:,1]!=inode]
                         R.append(inode)
+
+                        #Nodes left in igroup - remove spread nodes
+                        #I[i] = np.setdiff1d(igroup, spread_nodes)
                 #Get only the unique nodes in the new infections
                 new_infections = np.unique(new_infections)
                 #Check if the new infections are in the S - otherwise the nodes may already be infected
