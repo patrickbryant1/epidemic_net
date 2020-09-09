@@ -218,6 +218,7 @@ def simulate(serial_interval, f, outdir, n, m):
         result_df['num_infected'] = num_infected_day
         result_df['num_new_infections'] = num_new_infections
         result_df['num_new_removed'] = num_removed
+        result_df['deaths'] = deaths
         result_df.to_csv(outdir+'results.csv')
 
         return None

@@ -19,6 +19,7 @@ import pdb
 parser = argparse.ArgumentParser(description = '''Simulate the epidemic development of Stockholm on a graph network''')
 
 parser.add_argument('--resultdf', nargs=1, type= str, default=sys.stdin, help = 'Path to results.')
+parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 def plot_epidemic(x,y,xlabel,ylabel,title,outname):
@@ -43,14 +44,19 @@ def plot_epidemic(x,y,xlabel,ylabel,title,outname):
 #####MAIN#####
 args = parser.parse_args()
 resultdf= pd.read_csv(args.resultdf[0])
+n = args.n[0]
 outdir = args.outdir[0]
 
 num_days = len(resultdf)
-pdb.set_trace()
+num_new_infections = np.array(resultdf['num_new_infections'])
+deaths = np.array(resultdf['deaths'])
+num_removed = np.array(resultdf['num_new_removed'])
+edges = np.array(resultdf['edges'])
 
 #Plot spread
 plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day', 'Daily cases', outdir+'cases.png')
 plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', outdir+'cumulative_cases.png')
+plot_epidemic(np.arange(num_days),edges,'Days since initial spread','Remaining edges','Edges', outdir+'edges.png')
 
 
 #Plot deaths
