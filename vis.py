@@ -29,7 +29,7 @@ def plot_epidemic(x,y,xlabel,ylabel,title,outname):
     #Set font size
     matplotlib.rcParams.update({'font.size': 7})
     fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
-    ax.plot(x,y)
+    ax.plot(x,y, color = 'cornflowerblue')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
