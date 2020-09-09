@@ -131,7 +131,7 @@ def simulate(serial_interval, f):
 
 
         #Initial nodes
-        num_initial = 10
+        num_initial = 50
         picked_nodes = np.random.choice(n, num_initial)
         #Number of days
         num_days=50
@@ -147,28 +147,34 @@ def simulate(serial_interval, f):
         death_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
         #Initial infection
         I.append(picked_nodes)
+        num_infected_day = [num_initial]
         #Simulate by connecting to the initial pick
-        for d in range(num_days):
+        #The other model saves all infections and use them for multiplication with the SI
+        for d in range(1,num_days):
             prevR = len(R) #The number of removed the previous day
             #Loop through the infection groups
             group_lens = [] #group lens at day d
-            inf_prob = 0 #Infection probability at day d
+
             for i in range(len(I)):
                 igroup = I[i] #Get the infected group
                 inf_days[i]+=1 #Add one day to the infection group
-                inf_prob += len(igroup)*np.sum(serial_interval[:inf_days[i]]) #Probability of the selected nodes to be infected
                 group_lens.append(len(igroup))
+
+            #Loop through all days up to current to get infection probability
+            inf_prob = 0 #Infection probability at day d
+            for prev_day in range(d-1):
+                inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
 
             #This probability should be based on the total number of infections on a given day.
             #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
             #inf_nodes can then be chosen from all nodes on day d randomly.
             inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
-            num_infected_day = np.sum(group_lens)
-            spread_nodes = np.random.choice(num_infected_day, inf_nodes)
+            num_infected_day.append(np.sum(group_lens)) #Save the number infected today
+            spread_nodes = np.random.choice(num_infected_day[d], inf_nodes)
 
             if inf_nodes>0: #If there are nodes that can spread the infection
                 pdb.set_trace()
-                for inode in spread_nodes:
+                #for inode in spread_nodes:
                 spread = np.random.choice(len(igroup),inf_nodes)
                 spread_nodes = igroup[spread]
 
