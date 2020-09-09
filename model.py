@@ -119,20 +119,21 @@ def read_and_format_data(datadir, outdir):
         plt.close()
         return serial_interval, f
 
-def simulate(serial_interval, f):
+def simulate(serial_interval, f, edges):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
         n = 10000 #2385643, number of nodes
-        m = 5 #Number of edges to attach from a new node to existing nodes
+        m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
         Graph = nx.barabasi_albert_graph(n,m)
         edges = np.array(Graph.edges) #shape=n,2
-
+        #Save edges
+        np.save(outdir+str(n)+'_'+str(m)+'_edges.npy', edges)
 
 
         #Initial nodes
-        num_initial = 50
-        picked_nodes = np.random.choice(n, num_initial)
+        num_initial = 10
+        initial_infections = np.random.choice(n, num_initial)
         #Number of days
         num_days=50
 
@@ -140,47 +141,44 @@ def simulate(serial_interval, f):
         S = np.arange(n)
         #Infected
         I = []
-        inf_days = [0] #Keep track of the infection days for each group
         #Removed
         R = []
-        num_removed = []
+        num_removed = [0]
         death_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
+        #Keep track of remaining edges
+        remaining_edges = [edges.shape[0]]
         #Initial infection
-        I.append(picked_nodes)
+        I.extend(initial_infections)
         num_infected_day = [num_initial]
+        num_new_infections = [num_initial]
+        #Remove the initially picked nodes from S
+        S = np.setdiff1d(S,initial_infections)
         #Simulate by connecting to the initial pick
         #The other model saves all infections and use them for multiplication with the SI
+        print('day edges num_infected num_new_infections num_removed num_new_removed')
         for d in range(1,num_days):
             prevR = len(R) #The number of removed the previous day
-            #Loop through the infection groups
-            group_lens = [] #group lens at day d
-
-            for i in range(len(I)):
-                igroup = I[i] #Get the infected group
-                inf_days[i]+=1 #Add one day to the infection group
-                group_lens.append(len(igroup))
-
+            new_infections=[]
             #Loop through all days up to current to get infection probability
-            inf_prob = 0 #Infection probability at day d
-            for prev_day in range(d-1):
-                inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
-
             #This probability should be based on the total number of infections on a given day.
             #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
             #inf_nodes can then be chosen from all nodes on day d randomly.
-            inf_nodes = int(inf_prob) #Need to reach >0.5 to spread the infection
-            num_infected_day.append(np.sum(group_lens)) #Save the number infected today
-            spread_nodes = np.random.choice(num_infected_day[d], inf_nodes)
+            inf_prob = 0 #Infection probability at day d
+            for prev_day in range(d):
+                inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
 
-            if inf_nodes>0: #If there are nodes that can spread the infection
-
+            #Spread infection
+            inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
+            if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
+                spread_indices = np.random.choice(len(I), inf_nodes)
+                spread_nodes = np.array(I)[spread_indices]
+                #Remove the spread nodes from I (no longer infectious after they issued their spread)
+                I = [*np.setdiff1d(I, spread_nodes)]
                 #Get the new infections
                 new_infections = np.array([])
                 for inode in spread_nodes: #Get spread connections
-                    for i in range(len(I)): #Go through all the infectious groups
-                    #I should just add all the infected nodes into one group for each day instead?
-
                     inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
+                    #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
                         new_infections = np.append(new_infections, inode_connections)
                         #Remove from edges
@@ -188,23 +186,33 @@ def simulate(serial_interval, f):
                         edges = edges[edges[:,1]!=inode]
                         R.append(inode)
 
-                        #Nodes left in igroup - remove spread nodes
-                        #I[i] = np.setdiff1d(igroup, spread_nodes)
                 #Get only the unique nodes in the new infections
                 new_infections = np.unique(new_infections)
+
                 #Check if the new infections are in the S - otherwise the nodes may already be infected
-                I.append(new_infections) #append
-                inf_days.append(0)
+                new_infections = new_infections[np.isin(new_infections,S)]
+                #Remove from S
+                S = np.setdiff1d(S,new_infections)
+                I.extend(new_infections) #append
 
-            else:
-                continue
+            num_infected_day.append(len(I))
+            num_new_infections.append(len(new_infections))
+            num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
+            remaining_edges.append(edges.shape[0])
+            print(d, remaining_edges[d], num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
 
 
-            num_removed.append(len(R)-prevR)
-            print(d, edges.shape[0], num_removed[d], len(R))
         #Plot spread
-        num_removed = np.array(num_removed)
-        plt.plot(np.arange(d), 100*(num_removed[:d]/n))
+        num_new_infections = np.array(num_new_infections)
+        plt.plot(np.arange(num_days), 100*(num_new_infections/n))
+        plt.ylabel('% Infected')
+        plt.xlabel('Days since initial spread')
+        plt.savefig(outdir+'cases.png', format='png', dpi=300)
+        plt.close()
+
+        #Plot spread
+        num_new_infections = np.array(num_new_infections)
+        plt.plot(np.arange(num_days), 100*(num_new_infections/n))
         plt.ylabel('% Infected')
         plt.xlabel('Days since initial spread')
         plt.savefig(outdir+'cases.png', format='png', dpi=300)
@@ -214,16 +222,29 @@ def simulate(serial_interval, f):
         deaths = np.zeros(num_days)
         for di in range(1,num_days): #Loop through all days
             for dj in range(di): #Integrate by summing the num_removed*f[]
-                deaths[di] += num_removed[dj]*f[di-dj]
+                deaths[di] += num_new_infections[dj]*f[di-dj]
 
         plt.plot(np.arange(num_days), deaths)
         plt.ylabel('Deaths')
         plt.xlabel('Days since initial spread')
         plt.savefig(outdir+'deaths.png', format='png', dpi=300)
-        pdb.set_trace()
+
+
+        #Save results
+        result_df = pd.DataFrame()
+        result_df['day'] = np.arange(num_days)
+        result_df['edges'] = remaining_edges
+        result_df['num_infected'] = num_infected_day
+        result_df['num_new_infections'] = num_new_infections
+        result_df['num_new_removed'] = num_removed
+        result_df.to_csv(outdir+'results.csv')
 
         return
 
+def plot_epidemic(x,y,xlabel,ylabel,outname):
+    '''Plot the epidemic
+    '''
+    
 #####MAIN#####
 args = parser.parse_args()
 datadir = args.datadir[0]
@@ -232,4 +253,4 @@ outdir = args.outdir[0]
 #Read and format data
 serial_interval, f = read_and_format_data(datadir, outdir)
 #Simulate
-out = simulate(serial_interval, f)
+out = simulate(serial_interval, f, outdir)
