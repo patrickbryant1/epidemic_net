@@ -51,7 +51,7 @@ outdir = args.outdir[0]
 
 #Get stockholm csv
 stockholm_csv = pd.read_csv(datadir+'stockholm.csv')
-
+observed_deaths = stockholm_csv['Antal_avlidna_vecka']
 #Results
 num_days = len(resultdf)
 num_new_infections = np.array(resultdf['num_new_infections'])
@@ -66,8 +66,22 @@ plot_epidemic(np.arange(num_days),edges,'Days since initial spread','Remaining e
 
 
 #Plot deaths
-#Sliding window
-plot_epidemic(np.arange(num_days), deaths,'Days since initial spread','Deaths','Daily deaths', outdir+'deaths.png')
+weekly_deaths = np.zeros(len(stockholm_csv))
+#Do a 7day window to get more even death predictions
+for i in range(len(weekly_deaths)):
+    weekly_deaths[i]=np.sum(deaths[i*7:(i*7)+7])
+
+fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
+ax.plot(np.arange(len(weekly_deaths)), weekly_deaths, color = 'cornflowerblue', label = 'Simulation')
+ax.bar(np.arange(len(weekly_deaths)),observed_deaths, alpha = 0.5, label = 'Observation')
+ax.legend()
+ax.set_xlabel('Weeks since initial spread')
+ax.set_ylabel('Deaths')
+ax.set_title('Weekly deaths')
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+fig.tight_layout()
+fig.savefig(outdir+'deaths.png', format='png', dpi=300)
 
 #Plot the number removed - the ones that have issued spread
 plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders', outdir+'active_spreaders.png')
