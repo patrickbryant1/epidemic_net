@@ -7,11 +7,8 @@ import sys
 import os
 import glob
 import pandas as pd
-import matplotlib
-import matplotlib.pyplot as plt
 from scipy.stats import gamma, lognorm
 import numpy as np
-import seaborn as sns
 import networkx as nx
 import pdb
 
@@ -20,7 +17,9 @@ import pdb
 #Arguments for argparse module:
 parser = argparse.ArgumentParser(description = '''Simulate the epidemic development of Stockholm on a graph network''')
 
-parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
+parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
+parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
+parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
@@ -111,20 +110,20 @@ def read_and_format_data(datadir, outdir):
 
         #Multiplying s and h yields fraction dead of fraction survived
         f = s*h #This will be fed to the Stan Model
-        plt.plot(np.arange(len(f)),f)
-        plt.savefig(outdir+'f.png')
-        plt.close()
-        plt.plot(np.arange(len(serial_interval)),serial_interval)
-        plt.savefig(outdir+'SI.png')
-        plt.close()
+        # plt.plot(np.arange(len(f)),f)
+        # plt.savefig(outdir+'f.png')
+        # plt.close()
+        # plt.plot(np.arange(len(serial_interval)),serial_interval)
+        # plt.savefig(outdir+'SI.png')
+        # plt.close()
         return serial_interval, f
 
-def simulate(serial_interval, f, edges):
+def simulate(serial_interval, f, outdir, n, m):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
-        n = 2385643 # number of nodes
-        m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
+        #n = 2385643 # number of nodes
+        #m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
         Graph = nx.barabasi_albert_graph(n,m)
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
@@ -204,21 +203,14 @@ def simulate(serial_interval, f, edges):
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
 
-        #Plot spread
-        num_new_infections = np.array(num_new_infections)
-        plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day', 'Daily cases', outdir+'cases.png')
-        plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', outdir+'cumulative_cases.png')
 
+        num_new_infections = np.array(num_new_infections)
         #Calculate deaths
         deaths = np.zeros(num_days)
         for di in range(1,num_days): #Loop through all days
             for dj in range(di): #Integrate by summing the num_removed*f[]
                 deaths[di] += num_new_infections[dj]*f[di-dj]
-        #Plot deaths
-        plot_epidemic(np.arange(num_days), deaths,'Days since initial spread','Deaths','Daily deaths', outdir+'deaths.png')
 
-        #Plot the number removed - the ones that have issued spread
-        plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders', outdir+'active_spreaders.png')
         #Save results
         result_df = pd.DataFrame()
         result_df['day'] = np.arange(num_days)
@@ -228,31 +220,18 @@ def simulate(serial_interval, f, edges):
         result_df['num_new_removed'] = num_removed
         result_df.to_csv(outdir+'results.csv')
 
-        return
+        return None
 
-def plot_epidemic(x,y,xlabel,ylabel,title,outname):
-    '''Plot the epidemic
-    '''
-    #Set font size
-    matplotlib.rcParams.update({'font.size': 7})
-    fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
-    ax.plot(x,y)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    fig.tight_layout()
-    fig.savefig(outname, format='png', dpi=300)
-    plt.close()
 
 
 #####MAIN#####
 args = parser.parse_args()
+n = args.n[0]
+m = args.m[0]
 datadir = args.datadir[0]
 outdir = args.outdir[0]
 
 #Read and format data
 serial_interval, f = read_and_format_data(datadir, outdir)
 #Simulate
-out = simulate(serial_interval, f, outdir)
+simulate(serial_interval, f, outdir, n, m)
