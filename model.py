@@ -84,6 +84,7 @@ def read_and_format_data(datadir, outdir):
         #Infection fatality rate
         av_ifr=0.0058
         ifr_by_age_group = {'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
+
         #Infection to death distribution
         itd = infection_to_death()
         #Get hazard rates for all days in country data
@@ -156,6 +157,10 @@ def simulate(serial_interval, f, N, outdir, n, m):
         #Population
         age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
         population_shares = [0.666,0.125,0.092,0.077,0.032,0.008]
+        #The first intervention was introduced in Sweden on week 11 (self isolating if ill, March 10)
+        #The epidemic starts on week 6 --> 5 weeks in --> day 35
+        day_of_introduction = 35
+        spread_reduction = 0.3
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)
@@ -187,6 +192,7 @@ def simulate(serial_interval, f, N, outdir, n, m):
         num_infected_day = [num_initial]
         num_new_infections = [num_initial]
         num_new_infections_age_group = {'0-49':[],'50-59':[],'60-69':[],'70-79':[],'80-89':[],'90+':[]}
+
         #Add the initial infections per age group
         for ag in num_new_infections_age_group:
             num_new_infections_age_group[ag].append(len(initial_infections[np.isin(initial_infections,ag_nodes[ag])]))
@@ -200,16 +206,13 @@ def simulate(serial_interval, f, N, outdir, n, m):
             new_infections=[]
             #Loop through all days up to current to get infection probability
             #This probability should be based on the total number of infections on a given day.
-            #I should count all the infections on day d and then get the inf_nodes from total_inf*np.sum(serial_interval[:inf_days[i]])
-            #inf_nodes can then be chosen from all nodes on day d randomly.
-            #Is there problems with selecting this way? The nodes selected earlier should have lower probability of being selected
-            #for spread later in the epidemic. This way the probability may increase (?). Although with more infectious nodes
-            #the probability of selection likely goes down.
             inf_prob = 0 #Infection probability at day d
             for prev_day in range(d):
                 inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
 
             #Spread infection
+            if d>= day_of_introduction:
+                inf_prob = inf_prob*spread_reduction #Reduce the inf probability
             inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
             if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
                 if len(I)>inf_nodes:

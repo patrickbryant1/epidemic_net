@@ -60,7 +60,7 @@ weeks = stockholm_csv['veckonummer']
 num_days = len(resultdf)
 num_new_infections = np.array(resultdf['num_new_infections'])
 #Get deaths
-age_groups = ['Total','0-49','50-59','60-69','70-79','80-89','90+']
+age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
 deaths = np.zeros((len(age_groups),num_days)) #6 age groups
 for i in range(len(age_groups)):
     deaths[i,:]=np.array(resultdf[age_groups[i]+' deaths'])
@@ -85,9 +85,9 @@ weekly_deaths=weekly_deaths*(2385643/n) #scale with diff to Stockholm population
 fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
 colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
 for i in range(weekly_deaths.shape[0]):
-    ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i], label = age_groups[i], linewidth=3)
+    ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i+1], label = age_groups[i], linewidth=3)
 #Total
-ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[i], label = age_groups[i], linewidth=3)
+ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[0], label = 'Total', linewidth=3)
 ax.bar(np.arange(weekly_deaths.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
 ax.legend()
 plt.xticks(np.arange(weekly_deaths.shape[1]), weeks)
