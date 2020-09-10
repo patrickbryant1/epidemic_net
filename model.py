@@ -189,8 +189,7 @@ def simulate(serial_interval, f, N, outdir, n, m):
         num_new_infections_age_group = {'0-49':[],'50-59':[],'60-69':[],'70-79':[],'80-89':[],'90+':[]}
         #Add the initial infections per age group
         for ag in num_new_infections_age_group:
-            pdb.set_trace()
-            num_new_ag = ag_nodes[ag]
+            num_new_infections_age_group[ag].append(len(initial_infections[np.isin(initial_infections,ag_nodes[ag])]))
         #Remove the initially picked nodes from S
         S = np.setdiff1d(S,initial_infections)
         #Simulate by connecting to the initial pick
@@ -213,7 +212,10 @@ def simulate(serial_interval, f, N, outdir, n, m):
             #Spread infection
             inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
             if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
-                spread_indices = np.random.choice(len(I), inf_nodes,replace=False)
+                if len(I)>inf_nodes:
+                    spread_indices = np.random.choice(len(I), inf_nodes,replace=False)
+                else:
+                    spread_indices = np.arange(len(I))
                 spread_nodes = np.array(I)[spread_indices]
                 #Remove the spread nodes from I (no longer infectious after they issued their spread)
                 I = [*np.setdiff1d(I, spread_nodes)]
@@ -231,7 +233,6 @@ def simulate(serial_interval, f, N, outdir, n, m):
 
                 #Get only the unique nodes in the new infections
                 new_infections = np.unique(new_infections)
-
                 #Check if the new infections are in the S - otherwise the nodes may already be infected
                 new_infections = new_infections[np.isin(new_infections,S)]
                 #Remove from S
@@ -242,20 +243,26 @@ def simulate(serial_interval, f, N, outdir, n, m):
 
             num_infected_day.append(len(I))
             num_new_infections.append(len(new_infections))
-            #Add the new infections by age group
+            #Add the new infections per age group (if there are any)
+            for ag in num_new_infections_age_group:
+                if len(new_infections)>0:
+                    num_new_infections_age_group[ag].append(len(new_infections[np.isin(new_infections,ag_nodes[ag])]))
+                else:
+                    num_new_infections_age_group[ag].append(0)
 
             num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
             remaining_edges.append(edges.shape[0])
-            print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
+            print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
 
 
         num_new_infections = np.array(num_new_infections)
         #Calculate deaths
         deaths = np.zeros((f.shape[0],num_days))
         for ai in range(deaths.shape[0]):
+            ag = age_groups[ai]
             for di in range(1,num_days): #Loop through all days
                 for dj in range(di): #Integrate by summing the num_removed*f[]
-                    deaths[ai,di] += num_new_infections[dj]*population_shares[ai]*f[ai,di-dj]
+                    deaths[ai,di] += num_new_infections_age_group[ag][dj]*f[ai,di-dj]
 
         #Save results
         result_df = pd.DataFrame()
