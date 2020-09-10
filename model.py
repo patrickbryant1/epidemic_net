@@ -82,38 +82,61 @@ def read_and_format_data(datadir, outdir):
         #SI
         serial_interval = serial_interval_distribution(N) #pd.read_csv(datadir+"serial_interval.csv")
         #Infection fatality rate
-        ifr=0.0058
+        av_ifr=0.0058
+        ifr_by_age_group = {'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
         #Infection to death distribution
         itd = infection_to_death()
         #Get hazard rates for all days in country data
-        h = np.zeros(N)
-        f = np.cumsum(itd.pdf(np.arange(1,len(h)+1,0.5))) #Cumulative probability to die for each day
+        h = np.zeros((len(ifr_by_age_group),N))
+        f = np.cumsum(itd.pdf(np.arange(1,N+1,0.5))) #Cumulative probability to die for each day
         #Adjust f to reach max 1 - the half steps makes this different
         f = f/2
-        for i in range(1,len(h)):
-            #for each day t, the death prob is the area btw [t-0.5, t+0.5]
-            #divided by the survival fraction (1-the previous death fraction), (fatality ratio*death prob at t-0.5)
-            #This will be the percent increase compared to the previous end interval
-            h[i] = (ifr*(f[i*2+1]-f[i*2-1]))/(1-ifr*f[i*2-1])
+        #Hazard rate per age group
+        hi = 0
+        for age in ifr_by_age_group:
+            ifr = ifr_by_age_group[age]
+            for i in range(1,N):
+                #for each day t, the death prob is the area btw [t-0.5, t+0.5]
+                #divided by the survival fraction (1-the previous death fraction), (fatality ratio*death prob at t-0.5)
+                #This will be the percent increase compared to the previous end interval
+                h[hi,i] = (ifr*(f[i*2+1]-f[i*2-1]))/(1-ifr*f[i*2-1])
+            hi+=1 #Increase hazard index
 
         #The number of deaths today is the sum of the past infections weighted by their probability of death,
         #where the probability of death depends on the number of days since infection.
-        s = np.zeros(N)
-        s[0] = 1
-        for i in range(1,len(s)):
-            #h is the percent increase in death
-            #s is thus the relative survival fraction
-            #The cumulative survival fraction will be the previous
-            #times the survival probability
-            #These will be used to track how large a fraction is left after each day
-            #In the end all of this will amount to the adjusted death fraction
-            s[i] = s[i-1]*(1-h[i-1]) #Survival fraction
+        s = np.zeros((len(ifr_by_age_group),N))
+        s[:,0] = 1
+        for agei in range(s.shape[0]):
+            for i in range(1,s.shape[1]):
+                #h is the percent increase in death
+                #s is thus the relative survival fraction
+                #The cumulative survival fraction will be the previous
+                #times the survival probability
+                #These will be used to track how large a fraction is left after each day
+                #In the end all of this will amount to the adjusted death fraction
+                s[agei,i] = s[agei,i-1]*(1-h[agei,i-1]) #Survival fraction
 
         #Multiplying s and h yields fraction dead of fraction survived
         f = s*h #This will be fed to the Stan Model
-        # plt.plot(np.arange(len(f)),f)
-        # plt.savefig(outdir+'f.png')
+
+        # age_keys =[*ifr_by_age_group.keys()]
+        # colors = ['royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
+        # import matplotlib
+        # import matplotlib.pyplot as plt
+        # matplotlib.rcParams.update({'font.size': 7})
+        # fig, ax = plt.subplots(figsize=(6.5/2.54, 4.5/2.54))
+        # for fi in range(len(f)):
+        #     plt.plot(np.arange(N),f[fi,:],label=age_keys[fi], color = colors[fi])
+        # plt.legend()
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
+        # ax.set_title('Fatality rate')
+        # ax.set_xlabel('Infection day')
+        # ax.set_ylabel('Probability')
+        # fig.tight_layout()
+        # plt.savefig(outdir+'fatality_rate.png', format='png', dpi=300)
         # plt.close()
+        # pdb.set_trace()
         # plt.plot(np.arange(len(serial_interval)),serial_interval)
         # plt.savefig(outdir+'SI.png')
         # plt.close()
