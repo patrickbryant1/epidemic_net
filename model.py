@@ -83,7 +83,7 @@ def read_and_format_data(datadir, outdir):
         serial_interval = serial_interval_distribution(N) #pd.read_csv(datadir+"serial_interval.csv")
         #Infection fatality rate
         av_ifr=0.0058
-        ifr_by_age_group = {'Average':0.0058,'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
+        ifr_by_age_group = {'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
         #Infection to death distribution
         itd = infection_to_death()
         #Get hazard rates for all days in country data
@@ -153,10 +153,22 @@ def simulate(serial_interval, f, N, outdir, n, m):
         #Save edges
         np.save(outdir+str(n)+'_'+str(m)+'_edges.npy', edges)
 
+        #Population
+        age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
+        population_shares = [0.666,0.125,0.092,0.077,0.032,0.008]
+        #Assign the nodes randomly according to the population shares
+        ag_nodes = {}#Nodes per age group
+        not_chosen = np.arange(n)
+        ps = 0
+        for ag in age_groups:
+            chosen = np.random.choice(not_chosen, int(n*population_shares[ps]),replace=False)
+            ag_nodes[ag] = chosen
+            not_chosen = np.setdiff1d(not_chosen,chosen)
+            ps+=1#Increas population share index
 
         #Initial nodes
         num_initial = 10
-        initial_infections = np.random.choice(n, num_initial)
+        initial_infections = np.random.choice(n, num_initial,replace=False)
         #Number of days
         num_days=N
 
@@ -174,6 +186,11 @@ def simulate(serial_interval, f, N, outdir, n, m):
         I.extend(initial_infections)
         num_infected_day = [num_initial]
         num_new_infections = [num_initial]
+        num_new_infections_age_group = {'0-49':[],'50-59':[],'60-69':[],'70-79':[],'80-89':[],'90+':[]}
+        #Add the initial infections per age group
+        for ag in num_new_infections_age_group:
+            pdb.set_trace()
+            num_new_ag = ag_nodes[ag]
         #Remove the initially picked nodes from S
         S = np.setdiff1d(S,initial_infections)
         #Simulate by connecting to the initial pick
@@ -196,7 +213,7 @@ def simulate(serial_interval, f, N, outdir, n, m):
             #Spread infection
             inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
             if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
-                spread_indices = np.random.choice(len(I), inf_nodes)
+                spread_indices = np.random.choice(len(I), inf_nodes,replace=False)
                 spread_nodes = np.array(I)[spread_indices]
                 #Remove the spread nodes from I (no longer infectious after they issued their spread)
                 I = [*np.setdiff1d(I, spread_nodes)]
@@ -219,10 +236,14 @@ def simulate(serial_interval, f, N, outdir, n, m):
                 new_infections = new_infections[np.isin(new_infections,S)]
                 #Remove from S
                 S = np.setdiff1d(S,new_infections)
-                I.extend(new_infections) #append
+                I.extend(new_infections) #add to new infections
+
+
 
             num_infected_day.append(len(I))
             num_new_infections.append(len(new_infections))
+            #Add the new infections by age group
+
             num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d], len(R), num_removed[d])
@@ -230,8 +251,6 @@ def simulate(serial_interval, f, N, outdir, n, m):
 
         num_new_infections = np.array(num_new_infections)
         #Calculate deaths
-        age_groups = ['Average','0-49','50-59','60-69','70-79','80-89','90+']
-        population_shares = [1,0.666,0.125,0.092,0.077,0.032,0.008]
         deaths = np.zeros((f.shape[0],num_days))
         for ai in range(deaths.shape[0]):
             for di in range(1,num_days): #Loop through all days
