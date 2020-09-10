@@ -83,7 +83,7 @@ def read_and_format_data(datadir, outdir):
         serial_interval = serial_interval_distribution(N) #pd.read_csv(datadir+"serial_interval.csv")
         #Infection fatality rate
         av_ifr=0.0058
-        ifr_by_age_group = {'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
+        ifr_by_age_group = {'Average':0.0058,'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
         #Infection to death distribution
         itd = infection_to_death()
         #Get hazard rates for all days in country data
@@ -230,10 +230,13 @@ def simulate(serial_interval, f, N, outdir, n, m):
 
         num_new_infections = np.array(num_new_infections)
         #Calculate deaths
-        deaths = np.zeros(num_days)
-        for di in range(1,num_days): #Loop through all days
-            for dj in range(di): #Integrate by summing the num_removed*f[]
-                deaths[di] += num_new_infections[dj]*f[di-dj]
+        age_groups = ['Average','0-49','50-59','60-69','70-79','80-89','90+']
+        population_shares = [1,0.666,0.125,0.092,0.077,0.032,0.008]
+        deaths = np.zeros((f.shape[0],num_days))
+        for ai in range(deaths.shape[0]):
+            for di in range(1,num_days): #Loop through all days
+                for dj in range(di): #Integrate by summing the num_removed*f[]
+                    deaths[ai,di] += num_new_infections[dj]*population_shares[ai]*f[ai,di-dj]
 
         #Save results
         result_df = pd.DataFrame()
@@ -242,8 +245,9 @@ def simulate(serial_interval, f, N, outdir, n, m):
         result_df['num_infected'] = num_infected_day
         result_df['num_new_infections'] = num_new_infections
         result_df['num_new_removed'] = num_removed
-        result_df['deaths'] = deaths
-        result_df.to_csv(outdir+'results.csv')
+        for ai in range(deaths.shape[0]):
+            result_df[age_groups[ai]+' deaths'] = deaths[ai,:]
+        result_df.to_csv(outdir+'results_'+str(m)+'.csv')
 
         return None
 
