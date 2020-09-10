@@ -6,7 +6,7 @@ SR=0.5 #Spread reduction (multiplied with infection probability) - this should b
 OUTDIR=./results/n10000/
 for M in 1 2 3 5 7 10
   do
-    for SR in 0.1 0.2 0.3 0.4
+    for SR in '2,2,2,2,2,2'
       do
         ./model.py --datadir $DATADIR --n $N --m $M --s $SR --outdir $OUTDIR
       done

@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description = '''Simulate the epidemic developm
 parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
-parser.add_argument('--s', nargs=1, type= float, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
+parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
@@ -144,7 +144,7 @@ def read_and_format_data(datadir, outdir):
         # plt.close()
         return serial_interval, f, N
 
-def simulate(serial_interval, f, N, outdir, n, m, s):
+def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -153,7 +153,11 @@ def simulate(serial_interval, f, N, outdir, n, m, s):
         Graph = nx.barabasi_albert_graph(n,m)
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
-        np.save(outdir+str(n)+'_'+str(m)+'_'+str(s)+'_edges.npy', edges)
+        outname = outdir+str(n)+'_'+str(m)
+        pdb.set_trace()
+        for s in [*spread_reduction.values()]:
+            outname+='_'+str(s)
+        np.save(outname+'_edges.npy', edges)
 
         #Population
         age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
@@ -161,7 +165,7 @@ def simulate(serial_interval, f, N, outdir, n, m, s):
         #The first intervention was introduced in Sweden on week 11 (self isolating if ill, March 10)
         #The epidemic starts on week 6 --> 5 weeks in --> day 35
         day_of_introduction = 35
-        spread_reduction = {'0-49':2,'50-59':2,'60-69':2,'70-79':2,'80-89':2,'90+':2}
+
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)
@@ -289,7 +293,10 @@ def simulate(serial_interval, f, N, outdir, n, m, s):
         result_df['num_new_removed'] = num_removed
         for ai in range(deaths.shape[0]):
             result_df[age_groups[ai]+' deaths'] = deaths[ai,:]
-        result_df.to_csv(outdir+'results_'+str(m)+'_'+str(s)+'.csv')
+        outname = outdir+'results_'+str(m)
+        for s in [*spread_reduction.values()]:
+            outname+='_'+str(s)
+        result_df.to_csv(outname+'.csv')
         pdb.set_trace()
         return None
 
@@ -299,11 +306,17 @@ def simulate(serial_interval, f, N, outdir, n, m, s):
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
-s = args.s[0]
+s = args.s[0].split(',')
 datadir = args.datadir[0]
 outdir = args.outdir[0]
+
+spread_reduction = {'0-49':1,'50-59':1,'60-69':1,'70-79':1,'80-89':1,'90+':1}
+ai=0
+for ag in spread_reduction:
+    spread_reduction[ag] = int(s[ai])
+    ai+=1
 
 #Read and format data
 serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
-simulate(serial_interval, f, N, outdir, n, m, s)
+simulate(serial_interval, f, N, outdir, n, m, spread_reduction)
