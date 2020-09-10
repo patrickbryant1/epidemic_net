@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description = '''Simulate the epidemic developm
 parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
+parser.add_argument('--s', nargs=1, type= float, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
@@ -143,7 +144,7 @@ def read_and_format_data(datadir, outdir):
         # plt.close()
         return serial_interval, f, N
 
-def simulate(serial_interval, f, N, outdir, n, m):
+def simulate(serial_interval, f, N, outdir, n, m, s):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -152,7 +153,7 @@ def simulate(serial_interval, f, N, outdir, n, m):
         Graph = nx.barabasi_albert_graph(n,m)
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
-        np.save(outdir+str(n)+'_'+str(m)+'_edges.npy', edges)
+        np.save(outdir+str(n)+'_'+str(m)+'_'+str(s)+'_edges.npy', edges)
 
         #Population
         age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
@@ -160,7 +161,7 @@ def simulate(serial_interval, f, N, outdir, n, m):
         #The first intervention was introduced in Sweden on week 11 (self isolating if ill, March 10)
         #The epidemic starts on week 6 --> 5 weeks in --> day 35
         day_of_introduction = 35
-        spread_reduction = 0.3
+        spread_reduction = {'0-49':2,'50-59':2,'60-69':2,'70-79':2,'80-89':2,'90+':2}
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)
@@ -210,9 +211,8 @@ def simulate(serial_interval, f, N, outdir, n, m):
             for prev_day in range(d):
                 inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
 
+
             #Spread infection
-            if d>= day_of_introduction:
-                inf_prob = inf_prob*spread_reduction #Reduce the inf probability
             inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
             if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
                 if len(I)>inf_nodes:
@@ -220,11 +220,22 @@ def simulate(serial_interval, f, N, outdir, n, m):
                 else:
                     spread_indices = np.arange(len(I))
                 spread_nodes = np.array(I)[spread_indices]
-                #Remove the spread nodes from I (no longer infectious after they issued their spread)
-                I = [*np.setdiff1d(I, spread_nodes)]
+
+
                 #Get the new infections
                 new_infections = np.array([])
+                selected_spread_nodes = []
                 for inode in spread_nodes: #Get spread connections
+                    #Go through all age groups to see where the node belongs
+                    if d>= day_of_introduction-1:
+                        for ag in ag_nodes:
+                            if inode in ag_nodes[ag]:
+                                break
+                        #See if node should spread based on spread reduction
+                        if np.random.randint(spread_reduction[ag])!=spread_reduction[ag]:
+                            continue
+
+                    selected_spread_nodes.append(inode)
                     inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
                     #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
@@ -234,6 +245,8 @@ def simulate(serial_interval, f, N, outdir, n, m):
                         edges = edges[edges[:,1]!=inode]
                         R.append(inode)
 
+                #Remove the spread nodes from I (no longer infectious after they issued their spread)
+                I = [*np.setdiff1d(I, selected_spread_nodes)]
                 #Get only the unique nodes in the new infections
                 new_infections = np.unique(new_infections)
                 #Check if the new infections are in the S - otherwise the nodes may already be infected
@@ -276,8 +289,8 @@ def simulate(serial_interval, f, N, outdir, n, m):
         result_df['num_new_removed'] = num_removed
         for ai in range(deaths.shape[0]):
             result_df[age_groups[ai]+' deaths'] = deaths[ai,:]
-        result_df.to_csv(outdir+'results_'+str(m)+'.csv')
-
+        result_df.to_csv(outdir+'results_'+str(m)+'_'+str(s)+'.csv')
+        pdb.set_trace()
         return None
 
 
@@ -286,10 +299,11 @@ def simulate(serial_interval, f, N, outdir, n, m):
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
+s = args.s[0]
 datadir = args.datadir[0]
 outdir = args.outdir[0]
 
 #Read and format data
 serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
-simulate(serial_interval, f, N, outdir, n, m)
+simulate(serial_interval, f, N, outdir, n, m, s)

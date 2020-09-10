@@ -22,6 +22,7 @@ parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = '
 parser.add_argument('--resultdf', nargs=1, type= str, default=sys.stdin, help = 'Path to results.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
+parser.add_argument('--s', nargs=1, type= float, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
@@ -50,6 +51,7 @@ datadir = args.datadir[0]
 resultdf= pd.read_csv(args.resultdf[0])
 n = args.n[0]
 m = args.m[0]
+s = args.s[0]
 outdir = args.outdir[0]
 
 #Get stockholm csv
@@ -69,9 +71,9 @@ num_removed = np.array(resultdf['num_new_removed'])
 edges = np.array(resultdf['edges'])
 
 #Plot spread
-plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day', 'Daily cases', m,outdir+'cases_'+str(m)+'.png')
-plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', m,outdir+'cumulative_cases_'+str(m)+'.png')
-plot_epidemic(np.arange(num_days),edges,'Days since initial spread','Remaining edges','Edges',m, outdir+'edges_'+str(m)+'.png')
+plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day', 'Daily cases', m,outdir+'cases_'+str(m)+'_'+str(s)+'.png')
+plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', m,outdir+'cumulative_cases_'+str(m)+'_'+str(s)+'.png')
+plot_epidemic(np.arange(num_days),edges,'Days since initial spread','Remaining edges','Edges',m, outdir+'edges_'+str(m)+'_'+str(s)+'.png')
 
 
 #Plot deaths
@@ -98,7 +100,7 @@ ax.set_ylim([0,4000])
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 fig.tight_layout()
-fig.savefig(outdir+'deaths_'+str(m)+'.png', format='png', dpi=300)
+fig.savefig(outdir+'deaths_'+str(m)+'_'+str(s)+'.png', format='png', dpi=300)
 
 #Plot the number removed - the ones that have issued spread
-plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+'.png')
+plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+'_'+str(s)+'.png')
