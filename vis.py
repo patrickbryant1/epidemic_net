@@ -66,7 +66,11 @@ age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
 deaths = np.zeros((len(age_groups),num_days)) #6 age groups
 for i in range(len(age_groups)):
     deaths[i,:]=np.array(resultdf[age_groups[i]+' deaths'])
-
+#Get cases
+cases = np.zeros((len(age_groups),num_days)) #6 age groups
+for i in range(len(age_groups)):
+    cases[i,:]=np.array(resultdf[age_groups[i]+' cases'])
+#Removed and edges
 num_removed = np.array(resultdf['num_new_removed'])
 edges = np.array(resultdf['edges'])
 
@@ -80,8 +84,34 @@ plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initia
 plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', m,outdir+'cumulative_cases_'+str(m)+suffix)
 plot_epidemic(np.arange(num_days),edges,'Days since initial spread','Remaining edges','Edges',m, outdir+'edges_'+str(m)+suffix)
 
+#Plot cases per age group
+weekly_cases = np.zeros((len(age_groups),len(stockholm_csv)))
+#Do a 7day window to get more even case predictions
+for i in range(weekly_cases.shape[0]):
+    for j in range(weekly_cases.shape[1]):
+        weekly_cases[i,j]=np.sum(cases[i,j*7:(j*7)+7])
+weekly_cases=weekly_cases*(2385643/n) #scale with diff to Stockholm population
+
+fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
+colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
+for i in range(weekly_cases.shape[0]):
+    ax.plot(np.arange(weekly_cases.shape[1]), weekly_cases[i,:], color = colors[i+1], label = age_groups[i], linewidth=2)
+#Total
+ax.plot(np.arange(weekly_cases.shape[1]), np.sum(weekly_cases,axis=0), color = colors[0], label = 'Total', linewidth=2)
+ax.legend()
+plt.xticks(np.arange(weekly_cases.shape[1]), weeks)
+ax.set_xlabel('Week')
+ax.set_ylabel('Cases')
+ax.set_title(str(m)+' links')
+#ax.set_ylim([0,4000])
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+fig.tight_layout()
+fig.savefig(outdir+'weekly_cases_'+str(m)+suffix, format='png', dpi=300)
+
 
 #Plot deaths
+yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
 weekly_deaths = np.zeros((len(age_groups),len(stockholm_csv)))
 #Do a 7day window to get more even death predictions
 for i in range(weekly_deaths.shape[0]):
@@ -92,16 +122,18 @@ weekly_deaths=weekly_deaths*(2385643/n) #scale with diff to Stockholm population
 fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
 colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
 for i in range(weekly_deaths.shape[0]):
-    ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i+1], label = age_groups[i], linewidth=3)
+    ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i+1], label = age_groups[i], linewidth=2)
 #Total
-ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[0], label = 'Total', linewidth=3)
+ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[0], label = 'Total', linewidth=2)
 ax.bar(np.arange(weekly_deaths.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
 ax.legend()
 plt.xticks(np.arange(weekly_deaths.shape[1]), weeks)
 ax.set_xlabel('Week')
 ax.set_ylabel('Deaths')
-ax.set_title(str(m)+' links')
-ax.set_ylim([0,4000])
+
+title= str(m)+' links\n'+'Age 0-49, inf.prob. '+str(1/float(s[0]))+'\nAge 50+, inf.prob. '+str(1/float(s[5]))
+ax.set_title(title)
+ax.set_ylim(yscale[m])
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 fig.tight_layout()

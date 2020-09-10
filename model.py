@@ -163,8 +163,9 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
         age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
         population_shares = [0.666,0.125,0.092,0.077,0.032,0.008]
         #The first intervention was introduced in Sweden on week 11 (self isolating if ill, March 10)
-        #The epidemic starts on week 6 --> 5 weeks in --> day 35
-        day_of_introduction = 35
+        #The epidemic starts on week 8 --> 3 weeks in --> day 21
+        #Likely the epidemic started before
+        day_of_introduction = 21
 
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
