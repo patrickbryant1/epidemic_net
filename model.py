@@ -154,7 +154,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
         outname = outdir+str(n)+'_'+str(m)
-        pdb.set_trace()
+
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)
         np.save(outname+'_edges.npy', edges)
@@ -274,8 +274,6 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
 
-
-        num_new_infections = np.array(num_new_infections)
         #Calculate deaths
         deaths = np.zeros((f.shape[0],num_days))
         for ai in range(deaths.shape[0]):
@@ -293,11 +291,12 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
         result_df['num_new_removed'] = num_removed
         for ai in range(deaths.shape[0]):
             result_df[age_groups[ai]+' deaths'] = deaths[ai,:]
+            result_df[age_groups[ai]+' cases']=num_new_infections_age_group[age_groups[ai]]
         outname = outdir+'results_'+str(m)
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)
         result_df.to_csv(outname+'.csv')
-        pdb.set_trace()
+
         return None
 
 
@@ -306,7 +305,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
-s = args.s[0].split(',')
+s = args.s[0].split('_')
 datadir = args.datadir[0]
 outdir = args.outdir[0]
 
