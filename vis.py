@@ -19,10 +19,8 @@ import pdb
 parser = argparse.ArgumentParser(description = '''Simulate the epidemic development of Stockholm on a graph network''')
 
 parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
-parser.add_argument('--resultdf', nargs=1, type= str, default=sys.stdin, help = 'Path to results.')
+parser.add_argument('--resultsdir', nargs=1, type= str, default=sys.stdin, help = 'Path to results.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
-parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
-parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
@@ -43,26 +41,102 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     plt.close()
 
 
+def plot_deaths(all_results, age_groups, num_days):
+    '''Plot the deaths per age group with different links (m)
+    and reductions in inf_prob
+    '''
+    ms = all_results['m'].unique()
+    colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
+    #Go through all ms
+    for m in ms:
+        m_results = all_results[all_results['m']==m]
+        combos = m_results['combo'].unique()
+        n_combos = len(combos)
+        #Go through all age_groups
+        for ag in age_groups:
+            fig, ax = plt.subplots(figsize=(6/2.54, 4.5/2.54))
+            #Go through all combos
+            ci=0
+            for c in combos:
+                m_combo_results = m_results[m_results['combo']==c]
+                ag_deaths = np.array(m_combo_results[ag+' deaths']) #Get deaths for combo and ag
 
+                inf_probs
+                #Sum per week
+                weekly_deaths = np.zeros(int(num_days/7))
+                for w in range(len(weekly_deaths)):
+                    weekly_deaths[w]=np.sum(ag_deaths[w*7:(w*7)+7])
+                ax.plot(np.arange(weekly_deaths.shape[0]), weekly_deaths, color = colors[ci], label = age_groups[i], linewidth=2)
+                ci+=1 #increase combo index
+            pdb.set_trace()
 
+    #Plot deaths
+    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
+    weekly_deaths = np.zeros((len(age_groups),len(stockholm_csv)))
+    #Do a 7day window to get more even death predictions
+    for i in range(weekly_deaths.shape[0]):
+        for j in range(weekly_deaths.shape[1]):
+            weekly_deaths[i,j]=np.sum(deaths[i,j*7:(j*7)+7])
+    weekly_deaths=weekly_deaths*(2385643/n) #scale with diff to Stockholm population
+
+    fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
+    colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
+    for i in range(weekly_deaths.shape[0]):
+        ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i+1], label = age_groups[i], linewidth=2)
+    #Total
+    ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[0], label = 'Total', linewidth=2)
+    ax.bar(np.arange(weekly_deaths.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
+    ax.legend()
+    plt.xticks(np.arange(weekly_deaths.shape[1]), weeks)
+    ax.set_xlabel('Week')
+    ax.set_ylabel('Deaths')
+
+    title= str(m)+' links\n'+'Age 0-49, inf.prob. '+str(1/float(s[0]))+'\nAge 50+, inf.prob. '+str(1/float(s[5]))
+    ax.set_title(title)
+    ax.set_ylim(yscale[m])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(outdir+'deaths_'+str(m)+suffix, format='png', dpi=300)
 #####MAIN#####
 args = parser.parse_args()
 datadir = args.datadir[0]
-resultdf= pd.read_csv(args.resultdf[0])
+resultsdir= args.resultsdir[0]
 n = args.n[0]
-m = args.m[0]
-s = args.s[0].split('_')
 outdir = args.outdir[0]
 
 #Get stockholm csv
 stockholm_csv = pd.read_csv(datadir+'stockholm.csv')
 observed_deaths = stockholm_csv['Antal_avlidna_vecka']
 weeks = stockholm_csv['veckonummer']
+#Age groups
+age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
 #Results
-num_days = len(resultdf)
+result_dfs = glob.glob(resultsdir+'*.csv')
+#Loop through all results dfs
+all_results = pd.DataFrame()
+combos = {'1_1_1_1_1_1':1, '2_2_2_2_2_2':2, '4_4_4_4_4_4':3, '1_1_2_2_2_2':4, '1_1_4_4_4_4':5, '2_2_1_1_1_1':6, '4_4_1_1_1_1':7}
+
+for name in result_dfs:
+    resultdf = pd.read_csv(name)
+    num_days = len(resultdf)
+    info = name.split('/')[-1].split('.')[0].split('_')
+    pdb.set_trace()
+    m = int(info[1])
+    resultdf['m']=m
+    resultdf['combo']=combo
+    combo+=1
+    for a in range(len(age_groups)):
+        resultdf['inf. prob. '+age_groups[a]]=np.round(1/int(info[a+2]),2)
+    #append df
+    all_results = all_results.append(resultdf)
+
+#Plot deaths
+plot_deaths(all_results, age_groups, num_days)
+
 num_new_infections = np.array(resultdf['num_new_infections'])
 #Get deaths
-age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
+
 deaths = np.zeros((len(age_groups),num_days)) #6 age groups
 for i in range(len(age_groups)):
     deaths[i,:]=np.array(resultdf[age_groups[i]+' deaths'])
