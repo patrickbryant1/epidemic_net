@@ -26,8 +26,7 @@ parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'P
 def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     '''Plot the epidemic
     '''
-    #Set font size
-    matplotlib.rcParams.update({'font.size': 7})
+
     fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
     ax.plot(x,y, color = 'cornflowerblue', label=str(m))
     ax.set_xlabel(xlabel)
@@ -41,64 +40,57 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     plt.close()
 
 
-def plot_deaths(all_results, age_groups, num_days):
+def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, outdir):
     '''Plot the deaths per age group with different links (m)
     and reductions in inf_prob
     '''
     ms = all_results['m'].unique()
-    colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
+    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'lightskyblue',
+            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'teal'}
+    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
+    weeks = weeks[np.arange(0,len(weeks),4)]
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
-        combos = m_results['combo'].unique()
-        n_combos = len(combos)
         #Go through all age_groups
+        total = np.zeros((len(colors.keys()),int(num_days/7)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(6/2.54, 4.5/2.54))
             #Go through all combos
-            ci=0
-            for c in combos:
+            ti=0
+            for c in colors:
                 m_combo_results = m_results[m_results['combo']==c]
                 ag_deaths = np.array(m_combo_results[ag+' deaths']) #Get deaths for combo and ag
-
-                inf_probs
                 #Sum per week
                 weekly_deaths = np.zeros(int(num_days/7))
                 for w in range(len(weekly_deaths)):
                     weekly_deaths[w]=np.sum(ag_deaths[w*7:(w*7)+7])
-                ax.plot(np.arange(weekly_deaths.shape[0]), weekly_deaths, color = colors[ci], label = age_groups[i], linewidth=2)
-                ci+=1 #increase combo index
-            pdb.set_trace()
+                ax.plot(np.arange(weekly_deaths.shape[0]), weekly_deaths, color = colors[c], linewidth=1)
+                #Add to total
+                total[ti,:] += weekly_deaths
+                ti+=1
+            #Format and save fig
+            plt.xticks(np.arange(0,weekly_deaths.shape[0],4), weeks)
+            ax.set_xlabel('Week')
+            ax.set_ylabel('Deaths')
 
-    #Plot deaths
-    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
-    weekly_deaths = np.zeros((len(age_groups),len(stockholm_csv)))
-    #Do a 7day window to get more even death predictions
-    for i in range(weekly_deaths.shape[0]):
-        for j in range(weekly_deaths.shape[1]):
-            weekly_deaths[i,j]=np.sum(deaths[i,j*7:(j*7)+7])
-    weekly_deaths=weekly_deaths*(2385643/n) #scale with diff to Stockholm population
+            title= 'Ages '+ag
+            ax.set_title(title)
+            #ax.set_ylim(yscale[m])
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            fig.tight_layout()
+            fig.savefig(outdir+'deaths_'+str(m)+'_'+ag+'.png', format='png', dpi=300)
+        pdb.set_trace()
 
-    fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
-    colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
-    for i in range(weekly_deaths.shape[0]):
-        ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i+1], label = age_groups[i], linewidth=2)
-    #Total
-    ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[0], label = 'Total', linewidth=2)
-    ax.bar(np.arange(weekly_deaths.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
-    ax.legend()
-    plt.xticks(np.arange(weekly_deaths.shape[1]), weeks)
-    ax.set_xlabel('Week')
-    ax.set_ylabel('Deaths')
+        #Total
+        ax.plot(np.arange(total.shape[0]),total, color = 'slategray', linewidth=2)
+        ax.bar(np.arange(weekly_deaths.shape[0]),observed_deaths, alpha = 0.5, label = 'Observation')
 
-    title= str(m)+' links\n'+'Age 0-49, inf.prob. '+str(1/float(s[0]))+'\nAge 50+, inf.prob. '+str(1/float(s[5]))
-    ax.set_title(title)
-    ax.set_ylim(yscale[m])
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    fig.tight_layout()
-    fig.savefig(outdir+'deaths_'+str(m)+suffix, format='png', dpi=300)
+    return None
 #####MAIN#####
+#Set font size
+matplotlib.rcParams.update({'font.size': 7})
 args = parser.parse_args()
 datadir = args.datadir[0]
 resultsdir= args.resultsdir[0]
@@ -120,19 +112,15 @@ combos = {'1_1_1_1_1_1':1, '2_2_2_2_2_2':2, '4_4_4_4_4_4':3, '1_1_2_2_2_2':4, '1
 for name in result_dfs:
     resultdf = pd.read_csv(name)
     num_days = len(resultdf)
-    info = name.split('/')[-1].split('.')[0].split('_')
-    pdb.set_trace()
-    m = int(info[1])
+    info = name.split('/')[-1].split('.')[0]
+    m = int(info.split('_')[1])
     resultdf['m']=m
-    resultdf['combo']=combo
-    combo+=1
-    for a in range(len(age_groups)):
-        resultdf['inf. prob. '+age_groups[a]]=np.round(1/int(info[a+2]),2)
+    resultdf['combo']=info[-11:]
     #append df
     all_results = all_results.append(resultdf)
 
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days)
+plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, outdir)
 
 num_new_infections = np.array(resultdf['num_new_infections'])
 #Get deaths
