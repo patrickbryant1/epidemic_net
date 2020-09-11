@@ -160,19 +160,17 @@ def plot_cases(all_results, age_groups, num_days, weeks, n, outdir):
                 #weekly_cases = weekly_cases*(2385643/n)
                 #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
                 #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
-                ax.plot(np.arange(ag_cases.shape[0]),ag_cases, color = colors[c], linewidth=1)
+                ax.plot(np.arange(ag_cases.shape[0]),100*np.cumsum(ag_cases)/n, color = colors[c], linewidth=1)
                 #Add to total
                 total[ti,:] += ag_cases
                 ti+=1
             #Format and save fig
             #plt.xticks(np.arange(0,weekly_cases.shape[0],4), weeks, rotation='vertical')
             ax.set_xlabel('Day')
-            ax.set_ylabel('cases')
+            ax.set_ylabel('% Cases')
 
             title= 'Ages '+ag+'|m='+str(m)
             ax.set_title(title)
-            #ax.set_ylim(yscale[m])
-            ax.set_ylabel('cases')
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             fig.tight_layout()
@@ -184,16 +182,16 @@ def plot_cases(all_results, age_groups, num_days, weeks, n, outdir):
         fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
         ti=0
         for c in colors:
-            ax.plot(np.arange(total.shape[1]),total[ti,:], color = colors[c], linewidth=1)
+            ax.plot(np.arange(total.shape[1]),100*np.cumsum(total[ti,:])/n, color = colors[c], linewidth=1)
             ti+=1
 
         #plt.xticks(np.arange(0,weekly_cases.shape[0],4), weeks, rotation='vertical')
-        plt.xlim([0,30])
+        #plt.xlim([0,30])
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.set_ylabel('cases')
+        ax.set_ylabel('% Cases')
         fig.tight_layout()
         fig.savefig(outdir+'cases_'+str(m)+'_total.png', format='png', dpi=300)
         plt.close()
@@ -231,10 +229,10 @@ for name in result_dfs:
     all_results = all_results.append(resultdf)
 
 #Plot deaths
-#plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, weeks, n, outdir+'cases/')
+#plot_cases(all_results, age_groups, num_days, weeks, n, outdir+'cases/')
 
 #Plot the number removed - the ones that have issued spread
-plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
+#plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)

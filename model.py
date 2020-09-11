@@ -178,11 +178,12 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
             ps+=1#Increas population share index
 
         #Initial nodes
-        num_initial = 10
+        num_initial = 10 #represents start at 2400
         initial_infections = np.random.choice(n, num_initial,replace=False)
         #Number of days
         num_days=N
-
+        #Pseudo count
+        pseudo_count = 2
         #Susceptible
         S = np.arange(n)
         #Infected
@@ -216,8 +217,9 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
             for prev_day in range(d):
                 inf_prob += num_infected_day[prev_day]*serial_interval[d-prev_day] #Probability of the selected nodes to spread the infection
 
-
             #Spread infection
+            #Save the new infections
+            new_infections = np.array([])
             inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
             if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
                 if len(I)>inf_nodes:
@@ -226,9 +228,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
                     spread_indices = np.arange(len(I))
                 spread_nodes = np.array(I)[spread_indices]
 
-
                 #Get the new infections
-                new_infections = np.array([])
                 selected_spread_nodes = []
                 for inode in spread_nodes: #Get spread connections
                     #Go through all age groups to see where the node belongs
@@ -242,6 +242,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
 
                     selected_spread_nodes.append(inode)
                     inode_connections = np.append(edges[np.where(edges[:,0]==inode)][:,1], edges[np.where(edges[:,1]==inode)][:,0])
+
                     #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
                         new_infections = np.append(new_infections, inode_connections)
@@ -254,14 +255,26 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
                 I = [*np.setdiff1d(I, selected_spread_nodes)]
                 #Get only the unique nodes in the new infections
                 new_infections = np.unique(new_infections)
+
+                if len(S)<1:
+                    num_new_infections.append(len(new_infections))
+                    num_infected_day.append(len(I))
+                    num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
+                    remaining_edges.append(edges.shape[0])
+                    print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
+                    continue
                 #Check if the new infections are in the S - otherwise the nodes may already be infected
                 new_infections = new_infections[np.isin(new_infections,S)]
+
                 #Remove from S
                 S = np.setdiff1d(S,new_infections)
-                I.extend(new_infections) #add to new infections
 
 
-
+            #Add infection from new node
+            new_node = np.random.choice(S,pseudo_count)
+            new_infections = np.append(new_infections,new_node)
+            S = np.setdiff1d(S,new_node)
+            I.extend(new_infections) #add to new infections
             num_infected_day.append(len(I))
             num_new_infections.append(len(new_infections))
             #Add the new infections per age group (if there are any)
