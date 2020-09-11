@@ -40,7 +40,7 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     plt.close()
 
 
-def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, outdir):
+def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir):
     '''Plot the deaths per age group with different links (m)
     and reductions in inf_prob
     '''
@@ -65,7 +65,10 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, outdi
                 weekly_deaths = np.zeros(int(num_days/7))
                 for w in range(len(weekly_deaths)):
                     weekly_deaths[w]=np.sum(ag_deaths[w*7:(w*7)+7])
-                ax.plot(np.arange(weekly_deaths.shape[0]), weekly_deaths, color = colors[c], linewidth=1)
+                #Scale to Stockohlm
+                weekly_deaths = weekly_deaths*(2385643/n)
+                #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
+                ax.plot(np.arange(2,weekly_deaths.shape[0]), weekly_deaths[:-2], color = colors[c], linewidth=1)
                 #Add to total
                 total[ti,:] += weekly_deaths
                 ti+=1
@@ -81,12 +84,24 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, outdi
             ax.spines['right'].set_visible(False)
             fig.tight_layout()
             fig.savefig(outdir+'deaths_'+str(m)+'_'+ag+'.png', format='png', dpi=300)
-        pdb.set_trace()
+
+
 
         #Total
-        ax.plot(np.arange(total.shape[0]),total, color = 'slategray', linewidth=2)
-        ax.bar(np.arange(weekly_deaths.shape[0]),observed_deaths, alpha = 0.5, label = 'Observation')
-
+        fig, ax = plt.subplots(figsize=(6/2.54, 4.5/2.54))
+        ti=0
+        for c in colors:
+            ax.plot(np.arange(2,total.shape[1]),total[ti,:-2], color = colors[c], linewidth=1)
+            ti+=1
+        ax.bar(np.arange(total.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
+        plt.xticks(np.arange(0,weekly_deaths.shape[0],4), weeks)
+        ax.set_title('Total')
+        #ax.set_ylim(yscale[m])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        fig.tight_layout()
+        fig.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
+    pdb.set_trace()
     return None
 #####MAIN#####
 #Set font size
@@ -120,86 +135,8 @@ for name in result_dfs:
     all_results = all_results.append(resultdf)
 
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, outdir)
+plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir+'deaths/')
 
-num_new_infections = np.array(resultdf['num_new_infections'])
-#Get deaths
-
-deaths = np.zeros((len(age_groups),num_days)) #6 age groups
-for i in range(len(age_groups)):
-    deaths[i,:]=np.array(resultdf[age_groups[i]+' deaths'])
-#Get cases
-cases = np.zeros((len(age_groups),num_days)) #6 age groups
-for i in range(len(age_groups)):
-    cases[i,:]=np.array(resultdf[age_groups[i]+' cases'])
-#Removed and edges
-num_removed = np.array(resultdf['num_new_removed'])
-edges = np.array(resultdf['edges'])
-
-#Suffix
-suffix = ''
-for si in s:
-    suffix+='_'+str(si)
-suffix+='.png'
-#Plot spread
-plot_epidemic(np.arange(num_days), 100*(num_new_infections/n),'Days since initial spread','% Infected per day', 'Daily cases', m,outdir+'cases_'+str(m)+suffix)
-plot_epidemic(np.arange(num_days), 100*(np.cumsum(num_new_infections)/n),'Days since initial spread','Cumulative % infected','Cumulative cases', m,outdir+'cumulative_cases_'+str(m)+suffix)
-plot_epidemic(np.arange(num_days),edges,'Days since initial spread','Remaining edges','Edges',m, outdir+'edges_'+str(m)+suffix)
-
-#Plot cases per age group
-weekly_cases = np.zeros((len(age_groups),len(stockholm_csv)))
-#Do a 7day window to get more even case predictions
-for i in range(weekly_cases.shape[0]):
-    for j in range(weekly_cases.shape[1]):
-        weekly_cases[i,j]=np.sum(cases[i,j*7:(j*7)+7])
-weekly_cases=weekly_cases*(2385643/n) #scale with diff to Stockholm population
-
-fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
-colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
-for i in range(weekly_cases.shape[0]):
-    ax.plot(np.arange(weekly_cases.shape[1]), weekly_cases[i,:], color = colors[i+1], label = age_groups[i], linewidth=2)
-#Total
-ax.plot(np.arange(weekly_cases.shape[1]), np.sum(weekly_cases,axis=0), color = colors[0], label = 'Total', linewidth=2)
-ax.legend()
-plt.xticks(np.arange(weekly_cases.shape[1]), weeks)
-ax.set_xlabel('Week')
-ax.set_ylabel('Cases')
-ax.set_title(str(m)+' links')
-#ax.set_ylim([0,4000])
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-fig.tight_layout()
-fig.savefig(outdir+'weekly_cases_'+str(m)+suffix, format='png', dpi=300)
-
-
-#Plot deaths
-yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
-weekly_deaths = np.zeros((len(age_groups),len(stockholm_csv)))
-#Do a 7day window to get more even death predictions
-for i in range(weekly_deaths.shape[0]):
-    for j in range(weekly_deaths.shape[1]):
-        weekly_deaths[i,j]=np.sum(deaths[i,j*7:(j*7)+7])
-weekly_deaths=weekly_deaths*(2385643/n) #scale with diff to Stockholm population
-
-fig, ax = plt.subplots(figsize=(14/2.54, 9/2.54))
-colors = ['slategray','royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
-for i in range(weekly_deaths.shape[0]):
-    ax.plot(np.arange(weekly_deaths.shape[1]), weekly_deaths[i,:], color = colors[i+1], label = age_groups[i], linewidth=2)
-#Total
-ax.plot(np.arange(weekly_deaths.shape[1]), np.sum(weekly_deaths,axis=0), color = colors[0], label = 'Total', linewidth=2)
-ax.bar(np.arange(weekly_deaths.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
-ax.legend()
-plt.xticks(np.arange(weekly_deaths.shape[1]), weeks)
-ax.set_xlabel('Week')
-ax.set_ylabel('Deaths')
-
-title= str(m)+' links\n'+'Age 0-49, inf.prob. '+str(1/float(s[0]))+'\nAge 50+, inf.prob. '+str(1/float(s[5]))
-ax.set_title(title)
-ax.set_ylim(yscale[m])
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-fig.tight_layout()
-fig.savefig(outdir+'deaths_'+str(m)+suffix, format='png', dpi=300)
 
 #Plot the number removed - the ones that have issued spread
 plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
