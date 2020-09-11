@@ -44,18 +44,36 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, ou
     '''Plot the deaths per age group with different links (m)
     and reductions in inf_prob
     '''
+
     ms = all_results['m'].unique()
-    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'lightskyblue',
-            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'teal'}
+    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
+            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
+    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
+            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 20%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
+            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
     yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
     weeks = weeks[np.arange(0,len(weeks),4)]
+
+    #Plot Markers
+    fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+    i=5
+    for c in colors:
+        ax.plot([1,1.8],[i]*2, color = colors[c], linewidth=4)
+        ax.text(2.001,i,labels[c])
+        i-=1
+    ax.set_xlim([0.999,3.9])
+    ax.axis('off')
+    fig.tight_layout()
+    fig.savefig(outdir+'markers.png', format='png', dpi=300)
+    plt.close()
+
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
         total = np.zeros((len(colors.keys()),int(num_days/7)))
         for ag in age_groups:
-            fig, ax = plt.subplots(figsize=(6/2.54, 4.5/2.54))
+            fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
             ti=0
             for c in colors:
@@ -68,44 +86,122 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, ou
                 #Scale to Stockohlm
                 weekly_deaths = weekly_deaths*(2385643/n)
                 #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
-                ax.plot(np.arange(2,weekly_deaths.shape[0]), weekly_deaths[:-2], color = colors[c], linewidth=1)
+                #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
+                ax.plot(np.arange(5,weekly_deaths.shape[0]), weekly_deaths[:-5], color = colors[c], linewidth=1)
                 #Add to total
                 total[ti,:] += weekly_deaths
                 ti+=1
             #Format and save fig
-            plt.xticks(np.arange(0,weekly_deaths.shape[0],4), weeks)
+            plt.xticks(np.arange(0,weekly_deaths.shape[0],4), weeks, rotation='vertical')
             ax.set_xlabel('Week')
             ax.set_ylabel('Deaths')
 
-            title= 'Ages '+ag
+            title= 'Ages '+ag+'|m='+str(m)
             ax.set_title(title)
             #ax.set_ylim(yscale[m])
+            ax.set_ylabel('Deaths')
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             fig.tight_layout()
             fig.savefig(outdir+'deaths_'+str(m)+'_'+ag+'.png', format='png', dpi=300)
-
+            plt.close()
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(6/2.54, 4.5/2.54))
+        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
         ti=0
         for c in colors:
-            ax.plot(np.arange(2,total.shape[1]),total[ti,:-2], color = colors[c], linewidth=1)
+            ax.plot(np.arange(5,total.shape[1]),total[ti,:-5], color = colors[c], linewidth=1)
             ti+=1
         ax.bar(np.arange(total.shape[1]),observed_deaths, alpha = 0.5, label = 'Observation')
-        plt.xticks(np.arange(0,weekly_deaths.shape[0],4), weeks)
-        ax.set_title('Total')
+        plt.xticks(np.arange(0,weekly_deaths.shape[0],4), weeks, rotation='vertical')
+        ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+        ax.set_ylabel('Deaths')
         fig.tight_layout()
         fig.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
-    pdb.set_trace()
+        plt.close()
+
+    return None
+
+def plot_cases(all_results, age_groups, num_days, weeks, n, outdir):
+    '''Plot the cases per age group with different links (m)
+    and reductions in inf_prob
+    '''
+
+    ms = all_results['m'].unique()
+    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
+            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
+    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
+            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 20%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
+            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
+    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
+    weeks = weeks[np.arange(0,len(weeks),4)]
+
+    #Go through all ms
+    for m in ms:
+        m_results = all_results[all_results['m']==m]
+        #Go through all age_groups
+        total = np.zeros((len(colors.keys()),int(num_days)))
+        for ag in age_groups:
+            fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
+            #Go through all combos
+            ti=0
+            for c in colors:
+                m_combo_results = m_results[m_results['combo']==c]
+                ag_cases = np.array(m_combo_results[ag+' cases']) #Get cases for combo and ag
+                #Sum per week
+                #weekly_cases = np.zeros(int(num_days/7))
+                #for w in range(len(weekly_cases)):
+                #    weekly_cases[w]=np.sum(ag_cases[w*7:(w*7)+7])
+                #Scale to Stockohlm
+                #weekly_cases = weekly_cases*(2385643/n)
+                #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
+                #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
+                ax.plot(np.arange(ag_cases.shape[0]),ag_cases, color = colors[c], linewidth=1)
+                #Add to total
+                total[ti,:] += ag_cases
+                ti+=1
+            #Format and save fig
+            #plt.xticks(np.arange(0,weekly_cases.shape[0],4), weeks, rotation='vertical')
+            ax.set_xlabel('Day')
+            ax.set_ylabel('cases')
+
+            title= 'Ages '+ag+'|m='+str(m)
+            ax.set_title(title)
+            #ax.set_ylim(yscale[m])
+            ax.set_ylabel('cases')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            fig.tight_layout()
+            fig.savefig(outdir+'cases_'+str(m)+'_'+ag+'.png', format='png', dpi=300)
+            plt.close()
+
+
+        #Total
+        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        ti=0
+        for c in colors:
+            ax.plot(np.arange(total.shape[1]),total[ti,:], color = colors[c], linewidth=1)
+            ti+=1
+
+        #plt.xticks(np.arange(0,weekly_cases.shape[0],4), weeks, rotation='vertical')
+        plt.xlim([0,30])
+        ax.set_title('m='+str(m))
+        #ax.set_ylim(yscale[m])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_ylabel('cases')
+        fig.tight_layout()
+        fig.savefig(outdir+'cases_'+str(m)+'_total.png', format='png', dpi=300)
+        plt.close()
+
     return None
 #####MAIN#####
 #Set font size
-matplotlib.rcParams.update({'font.size': 7})
+matplotlib.rcParams.update({'font.size': 5.5})
 args = parser.parse_args()
 datadir = args.datadir[0]
 resultsdir= args.resultsdir[0]
@@ -135,8 +231,10 @@ for name in result_dfs:
     all_results = all_results.append(resultdf)
 
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir+'deaths/')
 
+#Plot cases
+plot_cases(all_results, age_groups, num_days, weeks, n, outdir+'cases/')
 
 #Plot the number removed - the ones that have issued spread
 plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
