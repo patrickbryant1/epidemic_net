@@ -261,6 +261,12 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
                     num_infected_day.append(len(I))
                     num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
                     remaining_edges.append(edges.shape[0])
+                    #Add the new infections per age group (if there are any)
+                    for ag in num_new_infections_age_group:
+                        if len(new_infections)>0:
+                            num_new_infections_age_group[ag].append(len(new_infections[np.isin(new_infections,ag_nodes[ag])]))
+                        else:
+                            num_new_infections_age_group[ag].append(0)
                     print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
                     continue
                 #Check if the new infections are in the S - otherwise the nodes may already be infected

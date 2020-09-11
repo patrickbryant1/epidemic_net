@@ -232,7 +232,7 @@ for name in result_dfs:
 plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, weeks, n, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, weeks, n, outdir+'cases/')
 
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
