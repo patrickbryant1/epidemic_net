@@ -131,7 +131,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
 
     return None
 
-def plot_cases(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
+def plot_cases(all_results, age_groups, num_days, n, outdir):
     '''Plot the cases per age group with different links (m)
     and reductions in inf_prob
     '''
@@ -143,9 +143,6 @@ def plot_cases(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
             '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
             '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
     yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
-
-    x_weeks = [ 0,  4,  8, 12, 16, 20, 24, 29]
-    weeks = np.array(week_dates)[x_weeks]
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
@@ -173,7 +170,6 @@ def plot_cases(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
             #Format and save fig
             ax.set_xlabel('Day')
             ax.set_ylabel('% Cases')
-            plt.xticks(x_weeks, weeks, rotation='vertical')
             title= 'Ages '+ag+'|m='+str(m)
             ax.set_title(title)
             ax.spines['top'].set_visible(False)
@@ -190,7 +186,6 @@ def plot_cases(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
             ax.plot(np.arange(total.shape[1]),100*np.cumsum(total[ti,:])/n, color = colors[c], linewidth=1)
             ti+=1
 
-        plt.xticks(x_weeks, weeks, rotation='vertical')
         #plt.xlim([0,30])
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
@@ -203,7 +198,7 @@ def plot_cases(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
 
     return None
 
-def plot_edges(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
+def plot_edges(all_results, age_groups, num_days, n, outdir):
     '''Plot the edges (add per age group) with different links (m)
     and reductions in inf_prob
     '''
@@ -215,8 +210,7 @@ def plot_edges(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
             '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
             '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
     yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
-    x_weeks = [ 0,  4,  8, 12, 16, 20, 24, 29]
-    weeks = np.array(week_dates)[x_weeks]
+
 
     #Go through all ms
     for m in ms:
@@ -231,7 +225,6 @@ def plot_edges(all_results, age_groups, num_days, weeks, n, week_dates, outdir):
         ax.set_title('m='+str(m))
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        plt.xticks(x_weeks, weeks, rotation='vertical')
         ax.set_ylabel('% Edges')
         fig.tight_layout()
         fig.savefig(outdir+'edges_'+str(m)+'_total.png', format='png', dpi=300)
@@ -277,9 +270,9 @@ week_dates = ['Feb 10', 'Feb 17', 'Feb 24', 'Mar 2', 'Mar 9', 'Mar 16', 'Mar 23'
 plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, weeks, n, week_dates, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
 
 #Plot the edges
-plot_edges(all_results, age_groups, num_days, weeks, n, week_dates, outdir+'edges/')
+plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
