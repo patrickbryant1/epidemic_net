@@ -178,12 +178,12 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
             ps+=1#Increas population share index
 
         #Initial nodes
-        num_initial = 10 #represents start at 2400
+        num_initial = 1 #represents start at num_initial*2385643/n
         initial_infections = np.random.choice(n, num_initial,replace=False)
         #Number of days
         num_days=N
         #Pseudo count
-        pseudo_count = 2
+        pseudo_count = 1
         #Susceptible
         S = np.arange(n)
         #Infected

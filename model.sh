@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 DATADIR=./data/
 N=10000 #2385643
-M=1
-SR=0.5 #Spread reduction (multiplied with infection probability) - this should be introduced on the day of intervention
+#M = number of new links to introduce
+#SR = Spread reduction (multiplied with infection probability) - this should be introduced on the day of intervention
 OUTDIR=./results/n10000/
 for M in 1 2 3 4 5
   do
