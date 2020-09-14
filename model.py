@@ -21,6 +21,8 @@ parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = '
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
 parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
+parser.add_argument('--num_initial', nargs=1, type= int, default=sys.stdin, help = 'Num initial nodes in net.')
+parser.add_argument('--pseudo_count', nargs=1, type= int, default=sys.stdin, help = 'Pseudo count (number of nodes).')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
@@ -144,7 +146,7 @@ def read_and_format_data(datadir, outdir):
         # plt.close()
         return serial_interval, f, N
 
-def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
+def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -178,12 +180,12 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction):
             ps+=1#Increas population share index
 
         #Initial nodes
-        num_initial = 1 #represents start at num_initial*2385643/n
+        #num_initial = 1 #represents start at num_initial*2385643/n
         initial_infections = np.random.choice(n, num_initial,replace=False)
         #Number of days
         num_days=N
         #Pseudo count
-        pseudo_count = 1
+        #pseudo_count = 1
         #Susceptible
         S = np.arange(n)
         #Infected
@@ -326,6 +328,8 @@ args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
 s = args.s[0].split('_')
+num_initial = args.num_initial[0]
+pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
 outdir = args.outdir[0]
 
@@ -338,4 +342,4 @@ for ag in spread_reduction:
 #Read and format data
 serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
-simulate(serial_interval, f, N, outdir, n, m, spread_reduction)
+simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count)
