@@ -4,7 +4,7 @@ N=100000 #2385643
 #M = number of new links to introduce
 #SR = Spread reduction (multiplied with infection probability) - this should be introduced on the day of intervention
 NINITIAL=10 #How many nodes to pick in the initial step
-PC=1 #Pseudo count
+PC=10 #Pseudo count
 OUTDIR=./results/n100000/
 for M in 1 2 3 4 5
   do
