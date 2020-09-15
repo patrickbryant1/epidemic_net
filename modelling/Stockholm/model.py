@@ -74,8 +74,6 @@ def read_and_format_data(datadir, outdir):
         stockholm_csv = pd.read_csv(datadir+'stockholm.csv')
         N=len(stockholm_csv)*7
 
-        #Get epidemic data
-        epidemic_data = pd.read_csv(datadir+'stockholm.csv')
 
         #Mobility data
         #mobility_data = pd.read_csv(datadir+'Global_Mobility_Report.csv')

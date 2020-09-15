@@ -15,7 +15,7 @@ import pdb
 
 
 #Arguments for argparse module:
-parser = argparse.ArgumentParser(description = '''Simulate the epidemic development of Stockholm on a graph network''')
+parser = argparse.ArgumentParser(description = '''Simulate the epidemic development of New York on a graph network''')
 
 parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
@@ -71,22 +71,16 @@ def read_and_format_data(datadir, outdir):
         '''Read in and format all data needed for the model
         N = number of days to model
         '''
-        stockholm_csv = pd.read_csv(datadir+'stockholm.csv')
-        N=len(stockholm_csv)*7
 
         #Get epidemic data
-        epidemic_data = pd.read_csv(datadir+'stockholm.csv')
+        epidemic_data = pd.read_csv(datadir+'new_york.csv')
+        N=len(epidemic_data)
 
-        #Mobility data
-        #mobility_data = pd.read_csv(datadir+'Global_Mobility_Report.csv')
-        #Convert to datetime
-        #mobility_data['date']=pd.to_datetime(mobility_data['date'], format='%Y/%m/%d')
 
         #SI
-        serial_interval = serial_interval_distribution(N) #pd.read_csv(datadir+"serial_interval.csv")
+        serial_interval = serial_interval_distribution(N)
         #Infection fatality rate
-        av_ifr=0.0058
-        ifr_by_age_group = {'0-49':0.0001,'50-59':0.0027,'60-69':0.0045,'70-79':0.0192,'80-89':0.072,'90+':0.1621}
+        ifr_by_age_group = {'0-19':0.00003,'20-49':0.0002,'50-69':0.005,'70+':0.054}
 
         #Infection to death distribution
         itd = infection_to_death()
@@ -163,12 +157,10 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         np.save(outname+'_edges.npy', edges)
 
         #Population
-        age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
-        population_shares = [0.666,0.125,0.092,0.077,0.032,0.008]
-        #The first intervention was introduced in Sweden on week 11 (self isolating if ill, March 10)
-        #The epidemic starts on week 8 --> 3 weeks in --> day 21
-        #Likely the epidemic started before
-        day_of_introduction = 21
+        age_groups = ['0-19','20-49','50-69','70+']
+        population_shares = [0.23,0.45,0.22,0.10]
+        #Lockdown 22 March: https://www.bbc.com/news/world-us-canada-52757150 = 23 days in
+        day_of_introduction = 23
 
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
@@ -194,7 +186,6 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         #Removed
         R = []
         num_removed = [0]
-        death_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
         dg_of_removed = [[0]] #Keep track of the degrees of the removed nodes
         #Keep track of remaining edges
         remaining_edges = [edges.shape[0]]
@@ -202,7 +193,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         I.extend(initial_infections)
         num_infected_day = [num_initial]
         num_new_infections = [num_initial]
-        num_new_infections_age_group = {'0-49':[],'50-59':[],'60-69':[],'70-79':[],'80-89':[],'90+':[]}
+        num_new_infections_age_group = {'0-19':[],'20-49':[],'50-69':[],'70+':[]}
 
         #Add the initial infections per age group
         for ag in num_new_infections_age_group:
@@ -360,7 +351,7 @@ pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
 outdir = args.outdir[0]
 
-spread_reduction = {'0-49':1,'50-59':1,'60-69':1,'70-79':1,'80-89':1,'90+':1}
+spread_reduction =  {'0-19':1,'20-49':1,'50-69':1,'70+':1}
 ai=0
 for ag in spread_reduction:
     spread_reduction[ag] = int(s[ai])
