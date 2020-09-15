@@ -41,16 +41,12 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     plt.close()
 
 
-def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir):
+def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir):
     '''Plot the deaths per age group with different links (m)
     and reductions in inf_prob
     '''
 
     ms = all_results['m'].unique()
-
-    x_weeks = [ 0,  4,  8, 12, 16, 20, 24, 29]
-    weeks = np.array(week_dates)[x_weeks]
-
 
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
@@ -69,7 +65,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),int(num_days/7)))
+        total = np.zeros((len(colors.keys()),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
@@ -77,21 +73,16 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
             for c in colors:
                 m_combo_results = m_results[m_results['combo']==c]
                 ag_deaths = np.array(m_combo_results[ag+' deaths']) #Get deaths for combo and ag
-                #Sum per week
-                weekly_deaths = np.zeros(int(num_days/7))
-                for w in range(len(weekly_deaths)):
-                    weekly_deaths[w]=np.sum(ag_deaths[w*7:(w*7)+7])
                 #Scale to Stockohlm
-                weekly_deaths = weekly_deaths*(2385643/n)
+                ag_deaths = ag_deaths*(8336817/n)
                 #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
                 #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
-                ax.plot(np.arange(5,weekly_deaths.shape[0]), np.cumsum(weekly_deaths[:-5]), color = colors[c], linewidth=1)
+                ax.plot(np.arange(ag_deaths.shape[0]), np.cumsum(ag_deaths), color = colors[c], linewidth=1)
                 #Add to total
-                total[ti,:] += weekly_deaths
+                total[ti,:] +=ag_deaths
                 ti+=1
             #Format and save fig
-            plt.xticks(x_weeks, weeks, rotation='vertical')
-            ax.set_xlabel('Week')
+            plt.xticks(x_dates, dates, rotation='vertical')
             ax.set_ylabel('Deaths')
 
             title= 'Ages '+ag+'|m='+str(m)
@@ -116,8 +107,9 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
             R,p = pearsonr(o_cases[5:],m_cases)
             print(labels[c]+','+str(np.average(np.absolute(o_cases[5:]-m_cases)))+','+str(R))
             ti+=1
+
+        ax.set_xticks(x_dates, dates, rotation='vertical')
         ax.bar(np.arange(total.shape[1]), o_cases, alpha = 0.5, label = 'Observation')
-        plt.xticks(x_weeks, weeks, rotation='vertical')
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
         ax.spines['top'].set_visible(False)
@@ -276,20 +268,22 @@ for name in result_dfs:
     info = name.split('/')[-1].split('.')[0]
     m = int(info.split('_')[1])
     resultdf['m']=m
-    resultdf['combo']=info[-11:]
+    resultdf['combo']=info[-7:]
     #append df
     all_results = all_results.append(resultdf)
 
 #xticks
-
+x_dates = [  0,  28,  56,  84, 112, 140, 168, 197]
+dates = ['Feb 29', 'Mar 28', 'Apr 25','May 23', 'Jun 20','Jul 18','Aug 15', 'Sep 13']
 colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '4_4_4_4':'royalblue',
         '1_1_2_2': 'springgreen', '1_1_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4':'0-49: 25%,50+: 25%',
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, n, dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
+pdb.set_trace()
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 

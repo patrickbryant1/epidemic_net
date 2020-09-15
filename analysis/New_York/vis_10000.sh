@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 DATADIR=../../data/
-RESULTSDIR=../../results/n10000/
+RESULTSDIR=../../results/New_York/n10000/
 N=10000 #2385643
 OUTDIR=../../results/New_York/n10000/plots/
 
