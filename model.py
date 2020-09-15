@@ -152,7 +152,8 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         #Network
         #n = 2385643 # number of nodes
         #m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
-        Graph = nx.barabasi_albert_graph(n,m)
+        Graph = nx.barabasi_albert_graph(n,m,seed=42)
+        degrees = np.array(Graph.degree)[:,1]
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
         outname = outdir+str(n)+'_'+str(m)
@@ -194,6 +195,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         R = []
         num_removed = [0]
         death_days = np.zeros(1000, dtype='int32') #Keep track of the infection days for each group
+        dg_of_removed = [[0]] #Keep track of the degrees of the removed nodes
         #Keep track of remaining edges
         remaining_edges = [edges.shape[0]]
         #Initial infection
@@ -213,6 +215,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         for d in range(1,num_days):
             prevR = len(R) #The number of removed the previous day
             new_infections=[]
+            new_degrees = [] #Save the degrees of the removed nodes for day d
             #Loop through all days up to current to get infection probability
             #This probability should be based on the total number of infections on a given day.
             inf_prob = 0 #Infection probability at day d
@@ -253,6 +256,14 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                         edges = edges[edges[:,1]!=inode]
                         R.append(inode)
 
+
+
+                    #Save the dg of the removed node - even if it is isolated
+                    #The degree is not necessarily the same as the number of connections
+                    #If links to the node are removed - its degree is reduced
+                    new_degrees.append(len(inode_connections))
+
+
                 #Remove the spread nodes from I (no longer infectious after they issued their spread)
                 I = [*np.setdiff1d(I, selected_spread_nodes)]
                 #Get only the unique nodes in the new infections
@@ -277,6 +288,8 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                 #Remove from S
                 S = np.setdiff1d(S,new_infections)
 
+            #Save the degrees for day d
+            dg_of_removed.append(new_degrees)
 
             #Add infection from new node
             new_node = np.random.choice(S,pseudo_count)
@@ -304,6 +317,19 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                 for dj in range(di): #Integrate by summing the num_removed*f[]
                     deaths[ai,di] += num_new_infections_age_group[ag][dj]*f[ai,di-dj]
 
+
+        #Format the degrees of the removed nodes (those that have issued spread)
+        x_times_av_dg = np.average(degrees)*5
+        num_above_left = [] #Save the number of nodes with a degree of at least x_times_av_dg left in the net
+        num_above = degrees[degrees>=x_times_av_dg].shape[0]
+        for dgs in dg_of_removed:
+            if len(dgs)>0:
+                for dg in dgs:
+                    if dg >= x_times_av_dg:
+                        num_above-=1
+
+            num_above_left.append(num_above)
+
         #Save results
         result_df = pd.DataFrame()
         result_df['day'] = np.arange(num_days)
@@ -314,6 +340,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         for ai in range(deaths.shape[0]):
             result_df[age_groups[ai]+' deaths'] = deaths[ai,:]
             result_df[age_groups[ai]+' cases']=num_new_infections_age_group[age_groups[ai]]
+        result_df['perc_above_left']=np.array(num_above_left)/max(num_above_left)
         outname = outdir+'results_'+str(m)
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)

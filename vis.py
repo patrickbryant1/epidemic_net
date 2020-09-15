@@ -191,6 +191,7 @@ def plot_cases(all_results, age_groups, num_days, n, outdir):
         #ax.set_ylim(yscale[m])
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+        ax.set_xlabel('Day')
         ax.set_ylabel('% Cases')
         fig.tight_layout()
         fig.savefig(outdir+'cases_'+str(m)+'_total.png', format='png', dpi=300)
@@ -209,8 +210,6 @@ def plot_edges(all_results, age_groups, num_days, n, outdir):
     labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
             '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
             '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
-    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
-
 
     #Go through all ms
     for m in ms:
@@ -225,9 +224,42 @@ def plot_edges(all_results, age_groups, num_days, n, outdir):
         ax.set_title('m='+str(m))
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+        ax.set_xlabel('Day')
         ax.set_ylabel('% Edges')
         fig.tight_layout()
         fig.savefig(outdir+'edges_'+str(m)+'_total.png', format='png', dpi=300)
+        plt.close()
+
+    return None
+
+def plot_degrees(all_results, age_groups, num_days, n, outdir):
+    '''Plot the max degree removed each day divided by the maximum degree in the net
+    '''
+
+    ms = all_results['m'].unique()
+    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
+            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
+    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
+            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
+            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
+
+    #Go through all ms
+    for m in ms:
+        m_results = all_results[all_results['m']==m]
+        #Total
+        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+
+        for c in colors:
+            m_combo_results = m_results[m_results['combo']==c]
+            ax.plot(np.arange(len(m_combo_results)),100*np.array(m_combo_results['perc_above_left']), color = colors[c], linewidth=1)
+        ax.set_xlim([0,25])
+        ax.set_title('m='+str(m))
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_xlabel('Day')
+        ax.set_ylabel('Nodes left above t (%)')
+        fig.tight_layout()
+        fig.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
         plt.close()
 
     return None
@@ -274,5 +306,8 @@ plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
 
 #Plot the edges
 plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
+
+#Plot the max degree reomved each day
+plot_degrees(all_results, age_groups, num_days, n, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
