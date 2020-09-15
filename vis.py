@@ -41,17 +41,13 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     plt.close()
 
 
-def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir):
+def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir):
     '''Plot the deaths per age group with different links (m)
     and reductions in inf_prob
     '''
 
     ms = all_results['m'].unique()
-    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
-            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
-    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
-            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
-            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
+
     yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
     #weeks = weeks[np.arange(0,len(weeks),4)]
 
@@ -137,17 +133,13 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
 
     return None
 
-def plot_cases(all_results, age_groups, num_days, n, outdir):
+def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''Plot the cases per age group with different links (m)
     and reductions in inf_prob
     '''
 
     ms = all_results['m'].unique()
-    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
-            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
-    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
-            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
-            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
+
     yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
     #Go through all ms
     for m in ms:
@@ -205,17 +197,12 @@ def plot_cases(all_results, age_groups, num_days, n, outdir):
 
     return None
 
-def plot_edges(all_results, age_groups, num_days, n, outdir):
+def plot_edges(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''Plot the edges (add per age group) with different links (m)
     and reductions in inf_prob
     '''
 
     ms = all_results['m'].unique()
-    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
-            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
-    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
-            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
-            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
 
     #Go through all ms
     for m in ms:
@@ -238,16 +225,11 @@ def plot_edges(all_results, age_groups, num_days, n, outdir):
 
     return None
 
-def plot_degrees(all_results, age_groups, num_days, n, outdir):
+def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''Plot the max degree removed each day divided by the maximum degree in the net
     '''
 
     ms = all_results['m'].unique()
-    colors = {'1_1_1_1_1_1':'royalblue', '2_2_2_2_2_2':'navy', '4_4_4_4_4_4':'magenta',
-            '1_1_2_2_2_2': 'darkcyan', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'paleturquoise', '4_4_1_1_1_1':'darkkhaki'}
-    labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
-            '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
-            '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
 
     #Go through all ms
     for m in ms:
@@ -306,16 +288,22 @@ for name in result_dfs:
 week_dates = ['Feb 10', 'Feb 17', 'Feb 24', 'Mar 2', 'Mar 9', 'Mar 16', 'Mar 23', 'Mar 30', 'Apr 6',
             'Apr 13', 'Apr 20', 'Apr 27', 'May 4', 'May 11', 'May 18', 'May 25', 'Jun 1', 'Jun 8', 'Jun 15',
             'Jun 22', 'Jun 29', 'Jul 6', 'Jul 13', 'Jul 20', 'Jul 27', 'Aug 3', 'Aug 10', 'Aug 17', 'Aug 24', 'Aug 31']
+
+colors = {'1_1_1_1_1_1':'k', '2_2_2_2_2_2':'cornflowerblue', '4_4_4_4_4_4':'royalblue',
+        '1_1_2_2_2_2': 'springgreen', '1_1_4_4_4_4':'mediumseagreen', '2_2_1_1_1_1':'magenta', '4_4_1_1_1_1':'darkmagenta'}
+labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4_4_4':'0-49: 25%,50+: 25%',
+        '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
+        '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
+plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
-plot_degrees(all_results, age_groups, num_days, n, outdir+'degrees/')
+plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
