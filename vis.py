@@ -11,6 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from scipy.stats import pearsonr
 import pdb
 
 
@@ -115,10 +116,15 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
         #Total
         fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
         ti=0
+        o_cases = np.cumsum(observed_deaths)
+        print(m)
         for c in colors:
-            ax.plot(np.arange(5,total.shape[1]), np.cumsum(total[ti,:-5]), color = colors[c], linewidth=1)
+            m_cases = np.cumsum(total[ti,:-5])
+            ax.plot(np.arange(5,total.shape[1]), m_cases, color = colors[c], linewidth=1)
+            R,p = pearsonr(o_cases[5:],m_cases)
+            print(labels[c]+','+str(np.average(np.absolute(o_cases[5:]-m_cases)))+','+str(R))
             ti+=1
-        ax.bar(np.arange(total.shape[1]), np.cumsum(observed_deaths), alpha = 0.5, label = 'Observation')
+        ax.bar(np.arange(total.shape[1]), o_cases, alpha = 0.5, label = 'Observation')
         plt.xticks(x_weeks, weeks, rotation='vertical')
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
@@ -301,13 +307,13 @@ week_dates = ['Feb 10', 'Feb 17', 'Feb 24', 'Mar 2', 'Mar 9', 'Mar 16', 'Mar 23'
             'Apr 13', 'Apr 20', 'Apr 27', 'May 4', 'May 11', 'May 18', 'May 25', 'Jun 1', 'Jun 8', 'Jun 15',
             'Jun 22', 'Jun 29', 'Jul 6', 'Jul 13', 'Jul 20', 'Jul 27', 'Aug 3', 'Aug 10', 'Aug 17', 'Aug 24', 'Aug 31']
 #Plot deaths
-#plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
 
 #Plot the edges
-#plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
+plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
 
 #Plot the max degree reomved each day
 plot_degrees(all_results, age_groups, num_days, n, outdir+'degrees/')
