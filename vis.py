@@ -248,10 +248,12 @@ def plot_degrees(all_results, age_groups, num_days, n, outdir):
         m_results = all_results[all_results['m']==m]
         #Total
         fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
-
+        combo=1
+        fetched_y = []
         for c in colors:
             m_combo_results = m_results[m_results['combo']==c]
             ax.plot(np.arange(len(m_combo_results)),100*np.array(m_combo_results['perc_above_left']), color = colors[c], linewidth=1)
+
         ax.set_xlim([0,25])
         ax.set_title('m='+str(m))
         ax.spines['top'].set_visible(False)
@@ -299,13 +301,13 @@ week_dates = ['Feb 10', 'Feb 17', 'Feb 24', 'Mar 2', 'Mar 9', 'Mar 16', 'Mar 23'
             'Apr 13', 'Apr 20', 'Apr 27', 'May 4', 'May 11', 'May 18', 'May 25', 'Jun 1', 'Jun 8', 'Jun 15',
             'Jun 22', 'Jun 29', 'Jul 6', 'Jul 13', 'Jul 20', 'Jul 27', 'Aug 3', 'Aug 10', 'Aug 17', 'Aug 24', 'Aug 31']
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
+#plot_cases(all_results, age_groups, num_days, n, outdir+'cases/')
 
 #Plot the edges
-plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
+#plot_edges(all_results, age_groups, num_days,  n, outdir+'edges/')
 
 #Plot the max degree reomved each day
 plot_degrees(all_results, age_groups, num_days, n, outdir+'degrees/')
