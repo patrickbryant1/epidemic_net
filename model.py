@@ -152,7 +152,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         #Network
         #n = 2385643 # number of nodes
         #m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
-        Graph = nx.barabasi_albert_graph(n,m,seed=42)
+        Graph = nx.barabasi_albert_graph(n,m,seed=0)
         degrees = np.array(Graph.degree)[:,1]
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
