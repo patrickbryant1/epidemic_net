@@ -108,8 +108,9 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             print(labels[c]+','+str(np.average(np.absolute(o_cases[5:]-m_cases)))+','+str(R))
             ti+=1
 
-        ax.set_xticks(x_dates, dates, rotation='vertical')
+
         ax.bar(np.arange(total.shape[1]), o_cases, alpha = 0.5, label = 'Observation')
+        plt.xticks(x_dates, dates, rotation='vertical')
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
         ax.spines['top'].set_visible(False)
@@ -283,7 +284,6 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
 #Plot deaths
 plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
-pdb.set_trace()
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
