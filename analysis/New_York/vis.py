@@ -270,6 +270,7 @@ for name in result_dfs:
     info = name.split('/')[-1].split('.')[0]
     m = int(info.split('_')[1])
     resultdf['m']=m
+    resultdf['seed']=int(info.split('_')[2])
     resultdf['combo']=info[-7:]
     #append df
     all_results = all_results.append(resultdf)

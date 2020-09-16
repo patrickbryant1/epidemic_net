@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-montage deg_1_total.png deg_2_total.png deg_3_total.png deg_4_total.png deg_5_total.png ../deaths/markers.png -tile 3x2 -geometry +2+2 -title 'New York' -pointsize 24 total_deg.png
+montage deg_1_total.png deg_2_total.png deg_3_total.png deg_4_total.png deg_5_total.png ../deaths/markers.png -tile 3x2 -geometry +2+2 -title 'New York City' -pointsize 24 total_deg.png
