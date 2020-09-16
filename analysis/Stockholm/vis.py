@@ -318,12 +318,12 @@ labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50
 plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
+plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
-#plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
+plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
