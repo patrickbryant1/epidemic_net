@@ -132,8 +132,8 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''
 
     ms = all_results['m'].unique()
+    seeds = all_results['seed'].unique()
 
-    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
@@ -145,15 +145,13 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
             ti=0
             for c in colors:
                 m_combo_results = m_results[m_results['combo']==c]
-                ag_cases = np.array(m_combo_results[ag+' cases']) #Get cases for combo and ag
-                #Sum per week
-                #weekly_cases = np.zeros(int(num_days/7))
-                #for w in range(len(weekly_cases)):
-                #    weekly_cases[w]=np.sum(ag_cases[w*7:(w*7)+7])
-                #Scale to Stockohlm
-                #weekly_cases = weekly_cases*(2385643/n)
-                #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
-                #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
+                #cases
+                ag_cases = np.zeros((len(seeds),num_days))
+                for seed in seeds:
+                    m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
+                    ag_cases[seed,:] = np.array(m_combo_seed_results[ag+' cases']) #Get cases for combo and ag
+
+                ag_cases = np.average(ag_cases,axis=0)
                 ax.plot(np.arange(ag_cases.shape[0]),100*np.cumsum(ag_cases)/n, color = colors[c], linewidth=1)
                 #Add to total
                 total[ti,:] += ag_cases
@@ -196,16 +194,23 @@ def plot_edges(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''
 
     ms = all_results['m'].unique()
-
+    seeds = all_results['seed'].unique()
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Total
         fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-
+        #edges
+        edges = np.zeros((len(seeds),num_days))
         for c in colors:
             m_combo_results = m_results[m_results['combo']==c]
-            ax.plot(np.arange(len(m_combo_results)),np.array(m_combo_results['edges'])/max(m_combo_results['edges']), color = colors[c], linewidth=1)
+            edges = np.zeros((len(seeds),num_days))
+            for seed in seeds:
+                m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
+                edges[seed,:] = np.array(m_combo_seed_results['edges']) #Get cases for combo and ag
+            #Average over seeds
+            edges = np.average(edges,axis=0)
+            ax.plot(np.arange(len(edges)),edges/max(edges), color = colors[c], linewidth=1)
 
         ax.set_title('m='+str(m))
         ax.spines['top'].set_visible(False)
@@ -223,7 +228,7 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''
 
     ms = all_results['m'].unique()
-
+    seeds = all_results['seed'].unique()
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
@@ -233,7 +238,13 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
         fetched_y = []
         for c in colors:
             m_combo_results = m_results[m_results['combo']==c]
-            ax.plot(np.arange(len(m_combo_results)),100*np.array(m_combo_results['perc_above_left']), color = colors[c], linewidth=1)
+            degrees = np.zeros((len(seeds),num_days))
+            for seed in seeds:
+                m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
+                degrees[seed,:] = np.array(m_combo_seed_results['perc_above_left']) #Get cases for combo and ag
+            #Average over seeds
+            degrees = np.average(degrees,axis=0)
+            ax.plot(np.arange(len(degrees)),100*degrees, color = colors[c], linewidth=1)
 
         ax.set_xlim([0,25])
         ax.set_title('m='+str(m))
@@ -287,15 +298,15 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
+plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
-#plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
+plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
