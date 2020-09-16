@@ -28,7 +28,7 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     '''Plot the epidemic
     '''
 
-    fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
+    fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
     ax.plot(x,y, color = 'cornflowerblue', label=str(m))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -97,10 +97,11 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         o_cases = np.cumsum(observed_deaths)
         print(m)
+        ax.bar(np.arange(total.shape[1]), o_cases, alpha = 0.5, label = 'Observation')
         for c in colors:
             m_cases = np.cumsum(total[ti,:-5])
             ax.plot(np.arange(5,total.shape[1]), m_cases, color = colors[c], linewidth=1)
@@ -109,7 +110,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             ti+=1
 
 
-        ax.bar(np.arange(total.shape[1]), o_cases, alpha = 0.5, label = 'Observation')
+
         plt.xticks(x_dates, dates, rotation='vertical')
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
@@ -136,7 +137,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
         #Go through all age_groups
         total = np.zeros((len(colors.keys()),int(num_days)))
         for ag in age_groups:
-            fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
+            fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
             #Go through all combos
             ti=0
             for c in colors:
@@ -167,7 +168,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
             ax.plot(np.arange(total.shape[1]),100*np.cumsum(total[ti,:])/n, color = colors[c], linewidth=1)
@@ -197,7 +198,7 @@ def plot_edges(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
 
         for c in colors:
             m_combo_results = m_results[m_results['combo']==c]
@@ -224,7 +225,7 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         combo=1
         fetched_y = []
         for c in colors:
@@ -274,7 +275,7 @@ for name in result_dfs:
     all_results = all_results.append(resultdf)
 
 #xticks
-x_dates = [  0,  28,  56,  84, 112, 140, 168, 197]
+x_dates = [  0,  28,  56,  84, 112, 140, 168, 196]
 dates = ['Feb 29', 'Mar 28', 'Apr 25','May 23', 'Jun 20','Jul 18','Aug 15', 'Sep 13']
 colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '4_4_4_4':'royalblue',
         '1_1_2_2': 'springgreen', '1_1_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}

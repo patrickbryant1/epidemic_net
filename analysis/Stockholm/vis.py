@@ -28,7 +28,7 @@ def plot_epidemic(x,y,xlabel,ylabel,title,m,outname):
     '''Plot the epidemic
     '''
 
-    fig, ax = plt.subplots(figsize=(6/2.54, 4/2.54))
+    fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
     ax.plot(x,y, color = 'cornflowerblue', label=str(m))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -110,7 +110,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         o_cases = np.cumsum(observed_deaths)
         print(m)
@@ -147,7 +147,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
         #Go through all age_groups
         total = np.zeros((len(colors.keys()),int(num_days)))
         for ag in age_groups:
-            fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
+            fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
             #Go through all combos
             ti=0
             for c in colors:
@@ -178,7 +178,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
             ax.plot(np.arange(total.shape[1]),100*np.cumsum(total[ti,:])/n, color = colors[c], linewidth=1)
@@ -208,7 +208,7 @@ def plot_edges(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
 
         for c in colors:
             m_combo_results = m_results[m_results['combo']==c]
@@ -235,7 +235,7 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Total
-        fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         combo=1
         fetched_y = []
         for c in colors:
