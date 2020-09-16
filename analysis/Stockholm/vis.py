@@ -47,10 +47,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
     '''
 
     ms = all_results['m'].unique()
-
-    yscale = {1:[0,500],2:[0,2000],3:[0,3000],5:[0,4000]}
-    #weeks = weeks[np.arange(0,len(weeks),4)]
-
+    seeds = all_results['seed'].unique()
 
     x_weeks = [ 0,  4,  8, 12, 16, 20, 24, 29]
     weeks = np.array(week_dates)[x_weeks]
@@ -80,13 +77,22 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
             ti=0
             for c in colors:
                 m_combo_results = m_results[m_results['combo']==c]
-                ag_deaths = np.array(m_combo_results[ag+' deaths']) #Get deaths for combo and ag
+
+                #Save deaths
+                ag_deaths = np.zeros((len(seeds),num_days))
+                for seed in seeds:
+                    m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
+                    ag_deaths[seed,:] = np.array(m_combo_seed_results[ag+' deaths']) #Get deaths for combo and ag
+
+                #Scale to Stockholm
+                ag_deaths = ag_deaths*(2385643/n)
+                #Average
+                ag_deaths = np.average(ag_deaths,axis=0)
                 #Sum per week
                 weekly_deaths = np.zeros(int(num_days/7))
                 for w in range(len(weekly_deaths)):
                     weekly_deaths[w]=np.sum(ag_deaths[w*7:(w*7)+7])
-                #Scale to Stockohlm
-                weekly_deaths = weekly_deaths*(2385643/n)
+
                 #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
                 #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
                 ax.plot(np.arange(5,weekly_deaths.shape[0]), np.cumsum(weekly_deaths[:-5]), color = colors[c], linewidth=1)
@@ -112,15 +118,15 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
         #Total
         fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
-        o_cases = np.cumsum(observed_deaths)
+        o_deaths = np.cumsum(observed_deaths)
         print(m)
         for c in colors:
-            m_cases = np.cumsum(total[ti,:-5])
-            ax.plot(np.arange(5,total.shape[1]), m_cases, color = colors[c], linewidth=1)
-            R,p = pearsonr(o_cases[5:],m_cases)
-            print(labels[c]+','+str(np.average(np.absolute(o_cases[5:]-m_cases)))+','+str(R))
+            m_deaths  = np.cumsum(total[ti,:-5])
+            ax.plot(np.arange(5,total.shape[1]), m_deaths, color = colors[c], linewidth=1)
+            R,p = pearsonr(o_deaths[5:],m_deaths )
+            print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths)))+','+str(R))
             ti+=1
-        ax.bar(np.arange(total.shape[1]), o_cases, alpha = 0.5, label = 'Observation')
+        ax.bar(np.arange(total.shape[1]), o_deaths, alpha = 0.5, label = 'Observation')
         plt.xticks(x_weeks, weeks, rotation='vertical')
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
@@ -280,6 +286,7 @@ for name in result_dfs:
     info = name.split('/')[-1].split('.')[0]
     m = int(info.split('_')[1])
     resultdf['m']=m
+    resultdf['seed']=int(info.split('_')[2])
     resultdf['combo']=info[-11:]
     #append df
     all_results = all_results.append(resultdf)
@@ -298,12 +305,12 @@ labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50
 plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
+#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
-plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
+#plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
