@@ -188,8 +188,8 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
         fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
-            m_cases_av = np.cumsum(np.average(total[ti,:,:],axis=0))
-            m_cases_std = np.cumsum(np.std(total[ti,:,:],axis=0))
+            m_cases_av = 100*np.cumsum(np.average(total[ti,:,:],axis=0))/n
+            m_cases_std = 100*np.cumsum(np.std(total[ti,:,:],axis=0))/n
             #plot
             ax.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
             ax.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')

@@ -91,15 +91,15 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
                 #Scale to Stockholm
                 ag_deaths = ag_deaths*(2385643/n)
                 #Average
-                ag_deaths_av = np.average(ag_deaths,axis=0))
-                ag_deaths_std = np.std(ag_deaths,axis=0))
+                ag_deaths_av = np.average(ag_deaths,axis=0)
+                ag_deaths_std = np.std(ag_deaths,axis=0)
                 x=np.arange(ag_deaths.shape[1])
                 #Sum per week
                 weekly_deaths = np.zeros((len(seeds),int(num_days/7)))
                 weekly_deaths_av = np.zeros(int(num_days/7))
                 weekly_deaths_std = np.zeros(int(num_days/7))
-                for w in range(len(weekly_deaths)):
-                    weekly_deaths[w]=np.sum(ag_deaths_av[:,w*7:(w*7)+7])
+                for w in range(int(num_days/7)):
+                    weekly_deaths[:,w]=np.sum(ag_deaths[:,w*7:(w*7)+7],axis=1)
                     weekly_deaths_av[w]=np.sum(ag_deaths_av[w*7:(w*7)+7])
                     weekly_deaths_std[w]=np.sum(ag_deaths_std[w*7:(w*7)+7])
 
@@ -112,7 +112,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
                 ax.plot(np.arange(5,weekly_deaths_av.shape[0]), weekly_deaths_av[:-5]-weekly_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
                 ax.plot(np.arange(5,weekly_deaths_av.shape[0]), weekly_deaths_av[:-5]+weekly_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
                 #Add to total
-                pdb.set_trace()
                 total[ti,:,:] += weekly_deaths
                 ti+=1
             #Format and save fig
@@ -137,12 +136,17 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
         o_deaths = np.cumsum(observed_deaths)
         print(m)
         for c in colors:
-            m_deaths  = np.cumsum(total[ti,:-5])
-            ax.plot(np.arange(5,total.shape[1]), m_deaths, color = colors[c], linewidth=1)
-            R,p = pearsonr(o_deaths[5:],m_deaths )
-            print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths)))+','+str(R))
+            m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
+            m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
+            ax.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
+            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+
+            R,p = pearsonr(o_deaths[5:],m_deaths_av[:-5])
+            print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths_av[:-5])))+','+str(R))
             ti+=1
-        ax.bar(np.arange(total.shape[1]), o_deaths, alpha = 0.5, label = 'Observation')
+
+        ax.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
         plt.xticks(x_weeks, weeks, rotation='vertical')
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
@@ -167,7 +171,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),int(num_days)))
+        total = np.zeros((len(colors.keys()),len(seeds),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
             #Go through all combos
@@ -180,12 +184,13 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
                     m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
                     ag_cases[seed,:] = np.array(m_combo_seed_results[ag+' cases']) #Get cases for combo and ag
 
-                ag_cases = np.average(ag_cases,axis=0)
-
-                #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
-                ax.plot(np.arange(ag_cases.shape[0]),100*np.cumsum(ag_cases)/n, color = colors[c], linewidth=1)
+                ag_cases_av = 100*np.cumsum(np.average(ag_cases,axis=0))/n
+                ag_cases_std = 100*np.cumsum(np.average(ag_cases,axis=0))/n
+                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av, color = colors[c], linewidth=1)
+                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av-ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av+ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
                 #Add to total
-                total[ti,:] += ag_cases
+                total[ti,:,:] += ag_cases
                 ti+=1
             #Format and save fig
             ax.set_xlabel('Day')
@@ -203,7 +208,12 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
         fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
-            ax.plot(np.arange(total.shape[1]),100*np.cumsum(total[ti,:])/n, color = colors[c], linewidth=1)
+            m_cases_av = 100*np.cumsum(np.average(total[ti,:,:],axis=0))/n
+            m_cases_std = 100*np.cumsum(np.std(total[ti,:,:],axis=0))/n
+            #plot
+            ax.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
+            ax.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
             ti+=1
 
         #plt.xlim([0,30])
@@ -274,8 +284,11 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
                 m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
                 degrees[seed,:] = np.array(m_combo_seed_results['perc_above_left']) #Get cases for combo and ag
             #Average over seeds
-            degrees = np.average(degrees,axis=0)
-            ax.plot(np.arange(len(degrees)),100*degrees, color = colors[c], linewidth=1)
+            degrees_av = 100*np.average(degrees,axis=0)
+            degrees_std = 100*np.std(degrees,axis=0)
+            ax.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
+            ax.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
 
         ax.set_xlim([0,25])
         ax.set_title('m='+str(m))
@@ -307,7 +320,7 @@ age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
 #Get the results
 try:
     all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/Stockholm/all_results.csv')
-
+    num_days = 210
 except:
     #Results
     result_dfs = glob.glob(resultsdir+'*.csv')
@@ -340,13 +353,13 @@ labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50
         '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
+#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
 plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
