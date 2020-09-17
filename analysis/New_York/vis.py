@@ -118,7 +118,9 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
             m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
             ax.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
-            ax.fill_between(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],alpha=0.1)
+            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+
             R,p = pearsonr(o_deaths[5:],m_deaths_av[:-5])
             print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths_av[:-5])))+','+str(R))
             ti+=1
@@ -134,7 +136,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
         fig.tight_layout()
         fig.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
         plt.close()
-    pdb.set_trace()
 
     return None
 
@@ -150,7 +151,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),int(num_days)))
+        total = np.zeros((len(colors.keys()),len(seeds),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
             #Go through all combos
@@ -163,10 +164,13 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
                     m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
                     ag_cases[seed,:] = np.array(m_combo_seed_results[ag+' cases']) #Get cases for combo and ag
 
-                ag_cases = np.average(ag_cases,axis=0)
-                ax.plot(np.arange(ag_cases.shape[0]),100*np.cumsum(ag_cases)/n, color = colors[c], linewidth=1)
+                ag_cases_av = 100*np.cumsum(np.average(ag_cases,axis=0))/n
+                ag_cases_std = 100*np.cumsum(np.average(ag_cases,axis=0))/n
+                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av, color = colors[c], linewidth=1)
+                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av-ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av+ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
                 #Add to total
-                total[ti,:] += ag_cases
+                total[ti,:,:] += ag_cases
                 ti+=1
             #Format and save fig
             ax.set_xlabel('Day')
@@ -184,9 +188,13 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
         fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
-            ax.plot(np.arange(total.shape[1]),100*np.cumsum(total[ti,:])/n, color = colors[c], linewidth=1)
+            m_cases_av = np.cumsum(np.average(total[ti,:,:],axis=0))
+            m_cases_std = np.cumsum(np.std(total[ti,:,:],axis=0))
+            #plot
+            ax.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
+            ax.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
             ti+=1
-
         #plt.xlim([0,30])
         ax.set_title('m='+str(m))
         #ax.set_ylim(yscale[m])
@@ -255,9 +263,11 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
                 m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
                 degrees[seed,:] = np.array(m_combo_seed_results['perc_above_left']) #Get cases for combo and ag
             #Average over seeds
-            degrees = np.average(degrees,axis=0)
-            ax.plot(np.arange(len(degrees)),100*degrees, color = colors[c], linewidth=1)
-
+            degrees_av = 100*np.average(degrees,axis=0)
+            degrees_std = 100*np.std(degrees,axis=0)
+            ax.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
+            ax.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
         ax.set_xlim([0,25])
         ax.set_title('m='+str(m))
         ax.spines['top'].set_visible(False)
@@ -284,7 +294,7 @@ observed_deaths = epidemic_data['Deaths']
 
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
-#
+#Get the results
 try:
     all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/New_York/all_results.csv')
     num_days = 198
@@ -318,7 +328,7 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')

@@ -66,11 +66,12 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
     fig.savefig(outdir+'markers.png', format='png', dpi=300)
     plt.close()
 
+
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),int(num_days/7)))
+        total = np.zeros((len(colors.keys()),len(seeds),int(num_days/7)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
@@ -82,22 +83,37 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
                 ag_deaths = np.zeros((len(seeds),num_days))
                 for seed in seeds:
                     m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
-                    ag_deaths[seed,:] = np.array(m_combo_seed_results[ag+' deaths']) #Get deaths for combo and ag
-
+                    try:
+                        ag_deaths[seed,:] = np.array(m_combo_seed_results[ag+' deaths']) #Get deaths for combo and ag
+                    except:
+                        print(seed)
+                        break
                 #Scale to Stockholm
                 ag_deaths = ag_deaths*(2385643/n)
                 #Average
-                ag_deaths = np.average(ag_deaths,axis=0)
+                ag_deaths_av = np.average(ag_deaths,axis=0))
+                ag_deaths_std = np.std(ag_deaths,axis=0))
+                x=np.arange(ag_deaths.shape[1])
                 #Sum per week
-                weekly_deaths = np.zeros(int(num_days/7))
+                weekly_deaths = np.zeros((len(seeds),int(num_days/7)))
+                weekly_deaths_av = np.zeros(int(num_days/7))
+                weekly_deaths_std = np.zeros(int(num_days/7))
                 for w in range(len(weekly_deaths)):
-                    weekly_deaths[w]=np.sum(ag_deaths[w*7:(w*7)+7])
+                    weekly_deaths[w]=np.sum(ag_deaths_av[:,w*7:(w*7)+7])
+                    weekly_deaths_av[w]=np.sum(ag_deaths_av[w*7:(w*7)+7])
+                    weekly_deaths_std[w]=np.sum(ag_deaths_std[w*7:(w*7)+7])
 
+                #Cumulative
+                weekly_deaths_av = np.cumsum(weekly_deaths_av)
+                weekly_deaths_std = np.cumsum(weekly_deaths_std)
                 #The two first weeks for Stockholm are not considered part of the epidemic (start modeling on week 8)
                 #I make sure the curves are in phase, since the phase is dependent on the initial spread, which is unknown.
-                ax.plot(np.arange(5,weekly_deaths.shape[0]), np.cumsum(weekly_deaths[:-5]), color = colors[c], linewidth=1)
+                ax.plot(np.arange(5,weekly_deaths_av.shape[0]), weekly_deaths_av[:-5], color = colors[c], linewidth=1)
+                ax.plot(np.arange(5,weekly_deaths_av.shape[0]), weekly_deaths_av[:-5]-weekly_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
+                ax.plot(np.arange(5,weekly_deaths_av.shape[0]), weekly_deaths_av[:-5]+weekly_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
                 #Add to total
-                total[ti,:] += weekly_deaths
+                pdb.set_trace()
+                total[ti,:,:] += weekly_deaths
                 ti+=1
             #Format and save fig
             plt.xticks(x_weeks, weeks, rotation='vertical')
@@ -287,23 +303,32 @@ observed_deaths = stockholm_csv['Antal_avlidna_vecka']
 weeks = stockholm_csv['veckonummer']
 #Age groups
 age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
-#Results
-result_dfs = glob.glob(resultsdir+'*.csv')
-#Loop through all results dfs
-all_results = pd.DataFrame()
-combos = {'1_1_1_1_1_1':1, '2_2_2_2_2_2':2, '4_4_4_4_4_4':3, '1_1_2_2_2_2':4, '1_1_4_4_4_4':5, '2_2_1_1_1_1':6, '4_4_1_1_1_1':7}
 
-for name in result_dfs:
-    resultdf = pd.read_csv(name)
-    num_days = len(resultdf)
-    info = name.split('/')[-1].split('.')[0]
-    m = int(info.split('_')[1])
-    resultdf['m']=m
-    resultdf['seed']=int(info.split('_')[2])
-    resultdf['combo']=info[-11:]
-    #append df
-    all_results = all_results.append(resultdf)
+#Get the results
+try:
+    all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/Stockholm/all_results.csv')
 
+except:
+    #Results
+    result_dfs = glob.glob(resultsdir+'*.csv')
+    #Loop through all results dfs
+    all_results = pd.DataFrame()
+    combos = {'1_1_1_1_1_1':1, '2_2_2_2_2_2':2, '4_4_4_4_4_4':3, '1_1_2_2_2_2':4, '1_1_4_4_4_4':5, '2_2_1_1_1_1':6, '4_4_1_1_1_1':7}
+
+    for name in result_dfs:
+        resultdf = pd.read_csv(name)
+        num_days = len(resultdf)
+        info = name.split('/')[-1].split('.')[0]
+        m = int(info.split('_')[1])
+        resultdf['m']=m
+        resultdf['seed']=int(info.split('_')[2])
+        resultdf['combo']=info[-11:]
+        #append df
+        all_results = all_results.append(resultdf)
+
+    #save
+    all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/Stockholm/all_results.csv')
+    pdb.set_trace()
 #xticks
 week_dates = ['Feb 10', 'Feb 17', 'Feb 24', 'Mar 2', 'Mar 9', 'Mar 16', 'Mar 23', 'Mar 30', 'Apr 6',
             'Apr 13', 'Apr 20', 'Apr 27', 'May 4', 'May 11', 'May 18', 'May 25', 'Jun 1', 'Jun 8', 'Jun 15',
