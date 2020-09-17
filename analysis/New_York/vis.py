@@ -48,6 +48,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
     ms = all_results['m'].unique()
     seeds = all_results['seed'].unique()
+
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
     i=5
@@ -65,7 +66,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),int(num_days)))
+        total = np.zeros((len(colors.keys()),len(seeds),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
@@ -76,12 +77,20 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                 ag_deaths = np.zeros((len(seeds),num_days))
                 for seed in seeds:
                     m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
-                    ag_deaths[seed,:] = np.array(m_combo_seed_results[ag+' deaths']) #Get deaths for combo and ag
+                    try:
+                        ag_deaths[seed,:] = np.array(m_combo_seed_results[ag+' deaths']) #Get deaths for combo and ag
+                    except:
+                        print(seed)
+                        break
                 #Scale to New York
                 ag_deaths = ag_deaths*(8336817/n)
-                ax.plot(np.arange(ag_deaths.shape[1]), np.cumsum(np.average(ag_deaths,axis=0)), color = colors[c], linewidth=1)
+                ag_deaths_av = np.cumsum(np.average(ag_deaths,axis=0))
+                ag_deaths_std = np.cumsum(np.std(ag_deaths,axis=0))
+                x=np.arange(ag_deaths.shape[1])
+                ax.plot(x, ag_deaths_av, color = colors[c], linewidth=1)
+                ax.fill_between(x,ag_deaths_av-ag_deaths_std,ag_deaths_av+ag_deaths_std,color = colors[c],alpha=0.1)
                 #Add to total
-                total[ti,:] +=np.average(ag_deaths, axis=0)
+                total[ti,:,:] +=ag_deaths
                 ti+=1
             #Format and save fig
             plt.xticks(x_dates, dates, rotation='vertical')
@@ -104,12 +113,14 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
         ti=0
         o_deaths = np.cumsum(observed_deaths)
         print(m)
-        ax.bar(np.arange(total.shape[1]), o_deaths, alpha = 0.5, label = 'Observation')
+        ax.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
         for c in colors:
-            m_deaths = np.cumsum(total[ti,:])
-            ax.plot(np.arange(total.shape[1])[5:], m_deaths[:-5], color = colors[c], linewidth=1)
-            R,p = pearsonr(o_deaths,m_deaths)
-            print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths)))+','+str(R))
+            m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
+            m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
+            ax.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
+            ax.fill_between(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],alpha=0.1)
+            R,p = pearsonr(o_deaths[5:],m_deaths_av[:-5])
+            print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths_av[:-5])))+','+str(R))
             ti+=1
 
 
@@ -123,6 +134,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
         fig.tight_layout()
         fig.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
         plt.close()
+    pdb.set_trace()
 
     return None
 
@@ -272,25 +284,33 @@ observed_deaths = epidemic_data['Deaths']
 
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
-#Results
-result_dfs = glob.glob(resultsdir+'*.csv')
-#Loop through all results dfs
-all_results = pd.DataFrame()
-combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '1_1_2_2':4, '1_1_4_4':5, '2_2_1_1':6, '4_4_1_1':7}
+#
+try:
+    all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/New_York/all_results.csv')
+    num_days = 198
 
-for name in result_dfs:
-    resultdf = pd.read_csv(name)
-    num_days = len(resultdf)
-    info = name.split('/')[-1].split('.')[0]
-    m = int(info.split('_')[1])
-    resultdf['m']=m
-    resultdf['seed']=int(info.split('_')[2])
-    resultdf['combo']=info[-7:]
-    #append df
-    all_results = all_results.append(resultdf)
+except:
+
+    result_dfs = glob.glob(resultsdir+'*.csv')
+    #Loop through all results dfs
+    all_results = pd.DataFrame()
+    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '1_1_2_2':4, '1_1_4_4':5, '2_2_1_1':6, '4_4_1_1':7}
+
+    for name in result_dfs:
+        resultdf = pd.read_csv(name)
+        num_days = len(resultdf)
+        info = name.split('/')[-1].split('.')[0]
+        m = int(info.split('_')[1])
+        resultdf['m']=m
+        resultdf['seed']=int(info.split('_')[2])
+        resultdf['combo']=info[-7:]
+        #append df
+        all_results = all_results.append(resultdf)
+    #save
+    all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/New_York/all_results.csv')
 
 #xticks
-x_dates = [  0,  28,  56,  84, 112, 140, 168, 196]
+x_dates = [  0,  28,  56,  84, 112, 140, 168, 197]
 dates = ['Feb 29', 'Mar 28', 'Apr 25','May 23', 'Jun 20','Jul 18','Aug 15', 'Sep 13']
 colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '4_4_4_4':'royalblue',
         '1_1_2_2': 'springgreen', '1_1_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}
@@ -298,7 +318,7 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
