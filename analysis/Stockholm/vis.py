@@ -353,13 +353,13 @@ labels = {'1_1_1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2_2_2':'0-49: 50%,50+: 50
         '1_1_2_2_2_2': '0-49: 100%,50+: 50%', '1_1_4_4_4_4':'0-49: 100%,50+: 25%', '2_2_1_1_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-#plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, week_dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
+plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
 plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
