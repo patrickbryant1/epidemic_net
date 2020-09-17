@@ -87,8 +87,10 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                 ag_deaths_av = np.cumsum(np.average(ag_deaths,axis=0))
                 ag_deaths_std = np.cumsum(np.std(ag_deaths,axis=0))
                 x=np.arange(ag_deaths.shape[1])
-                ax.plot(x, ag_deaths_av, color = colors[c], linewidth=1)
-                ax.fill_between(x,ag_deaths_av-ag_deaths_std,ag_deaths_av+ag_deaths_std,color = colors[c],alpha=0.1)
+                ax.plot(np.arange(5,ag_deaths_av.shape[0]),ag_deaths_av[:-5], color = colors[c], linewidth=1)
+                ax.plot(np.arange(5,ag_deaths_av.shape[0]), ag_deaths_av[:-5]-ag_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
+                ax.plot(np.arange(5,ag_deaths_av.shape[0]), ag_deaths_av[:-5]+ag_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
+
                 #Add to total
                 total[ti,:,:] +=ag_deaths
                 ti+=1
@@ -328,7 +330,7 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
