@@ -159,7 +159,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
 
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)
-        np.save(outname+'_edges.npy', edges)
+        #np.save(outname+'_edges.npy', edges)
 
         #Population
         age_groups = ['0-49','50-59','60-69','70-79','80-89','90+']
