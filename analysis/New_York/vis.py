@@ -214,25 +214,37 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
             m_cases_av = 100*np.cumsum(np.average(total[ti,:,:],axis=0))/n
             m_cases_std = 100*np.cumsum(np.std(total[ti,:,:],axis=0))/n
-            #plot
-            ax.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
-            ax.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-            ax.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+            if c != '1_1_1_1':
+                #plot
+                ax1.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
+                ax1.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+            else:
+                ax2.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
+                ax2.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax2.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
             ti+=1
-        #plt.xlim([0,30])
-        ax.set_title('m='+str(m))
-        #ax.set_ylim(yscale[m])
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set_xlabel('Day')
-        ax.set_ylabel('% Cases')
-        fig.tight_layout()
-        fig.savefig(outdir+'cases_'+str(m)+'_total.png', format='png', dpi=300)
+        ax1.set_title('m='+str(m))
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.set_xlabel('Day')
+        ax1.set_ylabel('% Cases')
+        fig1.tight_layout()
+        fig1.savefig(outdir+'cases_'+str(m)+'_total.png', format='png', dpi=300)
+
+        ax2.set_title('m='+str(m))
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
+        ax2.set_xlabel('Day')
+        ax2.set_ylabel('% Cases')
+        fig2.tight_layout()
+        fig2.savefig(outdir+'cases_'+str(m)+'_total_100.png', format='png', dpi=300)
         plt.close()
 
     return None
@@ -282,7 +294,9 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Total
-        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+
+        fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         combo=1
         fetched_y = []
         for c in colors:
@@ -294,17 +308,31 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
             #Average over seeds
             degrees_av = 100*np.average(degrees,axis=0)
             degrees_std = 100*np.std(degrees,axis=0)
-            ax.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
-            ax.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
-            ax.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
-        ax.set_xlim([0,25])
-        ax.set_title('m='+str(m))
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set_xlabel('Day')
-        ax.set_ylabel('Nodes left above t (%)')
-        fig.tight_layout()
-        fig.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
+            if c != '1_1_1_1':
+                ax1.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
+                ax1.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
+            else:
+                ax2.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
+                ax2.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax2.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
+        ax1.set_xlim([0,25])
+        ax1.set_title('m='+str(m))
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.set_xlabel('Day')
+        ax1.set_ylabel('Nodes left above t (%)')
+        fig1.tight_layout()
+        fig1.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
+
+        ax2.set_xlim([0,25])
+        ax2.set_title('m='+str(m))
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
+        ax2.set_xlabel('Day')
+        ax2.set_ylabel('Nodes left above t (%)')
+        fig2.tight_layout()
+        fig2.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
         plt.close()
 
     return None
