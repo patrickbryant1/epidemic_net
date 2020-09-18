@@ -341,7 +341,7 @@ except:
 
     #save
     all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/Stockholm/all_results.csv')
-    pdb.set_trace()
+
 #xticks
 week_dates = ['Feb 10', 'Feb 17', 'Feb 24', 'Mar 2', 'Mar 9', 'Mar 16', 'Mar 23', 'Mar 30', 'Apr 6',
             'Apr 13', 'Apr 20', 'Apr 27', 'May 4', 'May 11', 'May 18', 'May 25', 'Jun 1', 'Jun 8', 'Jun 15',
