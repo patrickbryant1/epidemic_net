@@ -100,9 +100,9 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                 ag_deaths_av = np.cumsum(np.average(ag_deaths,axis=0))
                 ag_deaths_std = np.cumsum(np.std(ag_deaths,axis=0))
                 x=np.arange(ag_deaths.shape[1])
-                ax.plot(np.arange(5,ag_deaths_av.shape[0]),ag_deaths_av[:-5], color = colors[c], linewidth=1)
-                ax.plot(np.arange(5,ag_deaths_av.shape[0]), ag_deaths_av[:-5]-ag_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
-                ax.plot(np.arange(5,ag_deaths_av.shape[0]), ag_deaths_av[:-5]+ag_deaths_std[:-5], color = colors[c], linewidth=0.5, linestyle='dashed')
+                ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
+                ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
+                ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
 
                 #Add to total
                 total[ti,:,:] +=ag_deaths
@@ -136,16 +136,16 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
             m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
             if c != '1_1_1_1':
-                ax1.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
-                ax1.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax1.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
+                ax1.plot(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
             else:
-                ax2.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
-                ax2.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax2.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax2.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
+                ax2.plot(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax2.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
 
-            R,p = pearsonr(o_deaths[5:],m_deaths_av[:-5])
-            print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths_av[:-5])))+','+str(R))
+            R,p = pearsonr(o_deaths,m_deaths_av)
+            print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
             ti+=1
 
 
