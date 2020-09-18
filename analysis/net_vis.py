@@ -29,20 +29,21 @@ parser.add_argument('--network5', nargs=1, type= str, default=sys.stdin, help = 
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
-def visualize(network, outname):
+def visualize(outdir):
     '''Vizualize a network
     '''
     #Create a graph
-    gr = nx.Graph()
-    gr.add_edges_from(network)
+    #gr = nx.Graph()
+    #gr.add_edges_from(network)
+    for m in range(1,6):
+        gr = nx.barabasi_albert_graph(100,m,seed=0)
 
-    fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-    nx.draw(gr, node_size=5)
-
-    plt.axis('off')
-    fig.tight_layout()
-    fig.savefig(outname, format='png', dpi=300)
-    plt.close()
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        nx.draw(gr, width=0.5,node_size=1,node_color='lightsteelblue')
+        ax.set_title('m='+str(m))
+        fig.tight_layout()
+        fig.savefig(outdir+str(m)+'.png', format='png', dpi=300)
+        plt.close()
 
     return None
 #####MAIN#####
@@ -58,4 +59,11 @@ network5 = np.load(args.network1[0], allow_pickle=True)
 
 outdir = args.outdir[0]
 
-pdb.set_trace()
+#Visualize
+visualize(outdir)
+# visualize(network1, outdir+'net1.png')
+# visualize(network2, outdir+'net2.png')
+# visualize(network3, outdir+'net3.png')
+# visualize(network4, outdir+'net4.png')
+# visualize(network5, outdir+'net5.png')
+# pdb.set_trace()

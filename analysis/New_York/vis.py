@@ -51,8 +51,10 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
-    i=5
+    i=4
     for c in colors:
+        if c=='1_1_1_1':
+            continue
         ax.plot([1,1.8],[i]*2, color = colors[c], linewidth=4)
         ax.text(2.001,i,labels[c])
         i-=1
@@ -61,6 +63,17 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     fig.tight_layout()
     fig.savefig(outdir+'markers.png', format='png', dpi=300)
     plt.close()
+
+    #Plot Markers
+    fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+    ax.plot([1,1.8],[i]*2, color = colors['1_1_1_1'], linewidth=4)
+    ax.text(2.001,i,labels['1_1_1_1'])
+    ax.set_xlim([0.999,3.9])
+    ax.axis('off')
+    fig.tight_layout()
+    fig.savefig(outdir+'markers_100.png', format='png', dpi=300)
+    plt.close()
+
 
     #Go through all ms
     for m in ms:
@@ -111,32 +124,46 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
 
         #Total
-        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         o_deaths = np.cumsum(observed_deaths)
         print(m)
-        ax.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
+        ax1.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
+        ax2.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
+
         for c in colors:
             m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
             m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
-            ax.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
-            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
-            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+            if c != '1_1_1_1':
+                ax1.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
+                ax1.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+            else:
+                ax2.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
+                ax2.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax2.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
 
             R,p = pearsonr(o_deaths[5:],m_deaths_av[:-5])
             print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths_av[:-5])))+','+str(R))
             ti+=1
 
 
-
         plt.xticks(x_dates, dates, rotation='vertical')
-        ax.set_title('m='+str(m))
-        #ax.set_ylim(yscale[m])
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set_ylabel('Deaths')
-        fig.tight_layout()
-        fig.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
+        ax1.set_title('m='+str(m))
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.set_ylabel('Deaths')
+        fig1.tight_layout()
+        fig1.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
+
+        ax2.set_title('m='+str(m))
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
+        ax2.set_ylabel('Deaths')
+        fig2.tight_layout()
+        fig2.savefig(outdir+'deaths_'+str(m)+'_total_100.png', format='png', dpi=300)
+
         plt.close()
 
     return None

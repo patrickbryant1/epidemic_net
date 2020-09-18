@@ -7,4 +7,6 @@ for m in 1 2 3 4 5
 
 montage deaths_1.png deaths_2.png deaths_3.png deaths_4.png deaths_5.png -tile 5x1 -geometry +2+2 -title 'New York City' -pointsize 24 all_deaths.png
 
+#Total
 montage deaths_1_total.png deaths_2_total.png deaths_3_total.png deaths_4_total.png deaths_5_total.png markers.png -tile 3x2 -geometry +2+2 -title 'New York City' -pointsize 24 total_deaths.png
+montage deaths_1_total_100.png deaths_2_total_100.png deaths_3_total_100.png deaths_4_total_100.png deaths_5_total_100.png markers_100.png -tile 3x2 -geometry +2+2 -title 'New York City' -pointsize 24 total_deaths_100.png
