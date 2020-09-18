@@ -160,8 +160,10 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         #Population
         age_groups = ['0-19','20-49','50-69','70+']
         population_shares = [0.23,0.45,0.22,0.10]
-        #Lockdown 22 March: https://www.bbc.com/news/world-us-canada-52757150 = 23 days in
-        day_of_introduction = 23
+        #Lockdown 22 March: https://www.bbc.com/news/world-us-canada-52757150
+        #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 17 March = 18 Feb
+        #There are thus 33 days (28+5) until Lockdown
+        day_of_introduction = 33
 
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
@@ -375,4 +377,5 @@ for ag in spread_reduction:
 #Read and format data
 serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
+print('Simulating',m)
 simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,seed)
