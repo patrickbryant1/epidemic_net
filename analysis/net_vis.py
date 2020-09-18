@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from scipy.stats import pearsonr
+import networkx as nx
 import pdb
 
 
@@ -28,24 +29,20 @@ parser.add_argument('--network5', nargs=1, type= str, default=sys.stdin, help = 
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
-def visualize(network):
+def visualize(network, outname):
     '''Vizualize a network
     '''
-    #Go through all ms
-    for m in ms:
-        m_results = all_results[all_results['m']==m]
-        #Total
-        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+    #Create a graph
+    gr = nx.Graph()
+    gr.add_edges_from(network)
 
-        ax.set_xlim([0,25])
-        ax.set_title('m='+str(m))
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set_xlabel('Day')
-        ax.set_ylabel('Nodes left above t (%)')
-        fig.tight_layout()
-        fig.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
-        plt.close()
+    fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+    nx.draw(gr, node_size=5)
+
+    plt.axis('off')
+    fig.tight_layout()
+    fig.savefig(outname, format='png', dpi=300)
+    plt.close()
 
     return None
 #####MAIN#####
@@ -60,3 +57,5 @@ network4 = np.load(args.network1[0], allow_pickle=True)
 network5 = np.load(args.network1[0], allow_pickle=True)
 
 outdir = args.outdir[0]
+
+pdb.set_trace()
