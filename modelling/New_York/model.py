@@ -164,7 +164,8 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 17 March = 18 Feb
         #There are thus 33 days (28+5) until Lockdown
         day_of_introduction = 33
-
+        #Opening on 25 April --> 39 days after 17 March --> day 72
+        day_of_opening = 72
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)
@@ -236,7 +237,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                     #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
                         #Go through all connections to see what age groups each connected node belongs
-                        if d>= day_of_introduction-1:
+                        if d>= day_of_introduction-1 and d <day_of_opening:
                             selected_connections = []
                             for connection in inode_connections:
                                 for ag in ag_nodes: #Check age group
