@@ -201,13 +201,14 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     '''
 
     ms = all_results['m'].unique()
-    seeds = all_results['seed'].unique()
+    net_seeds = all_results['net_seed'].unique()
+    np_seeds = all_results['np_seed'].unique()
 
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),len(seeds),int(num_days)))
+        total = np.zeros((len(colors.keys()),len(net_seeds)*len(np_seeds),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
             #Go through all combos
@@ -215,13 +216,20 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
             for c in colors:
                 m_combo_results = m_results[m_results['combo']==c]
                 #cases
-                ag_cases = np.zeros((len(seeds),num_days))
-                for seed in seeds:
-                    m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
-                    ag_cases[seed,:] = np.array(m_combo_seed_results[ag+' cases']) #Get cases for combo and ag
+                ag_cases = np.zeros((len(net_seeds)*len(np_seeds),num_days))
+                pos = 0
+                for net_seed in net_seeds:
+                    m_combo_net_results = m_combo_results[m_combo_results['net_seed']==net_seed]
+                    for np_seed in np_seeds:
+                        m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
+                        try:
+                            ag_cases[pos,:] = np.array(m_combo_np_net_results[ag+' cases']) #Get deaths for combo and ag
+                        except:
+                            pdb.set_trace()
+                        pos+=1
 
                 ag_cases_av = 100*np.cumsum(np.average(ag_cases,axis=0))/n
-                ag_cases_std = 100*np.cumsum(np.average(ag_cases,axis=0))/n
+                ag_cases_std = 100*np.cumsum(sem(ag_cases,axis=0))/n
                 ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av, color = colors[c], linewidth=1)
                 ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av-ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
                 ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av+ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
@@ -245,13 +253,13 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
         fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         for c in colors:
-            m_cases_av = 100*np.cumsum(np.average(total[ti,:,:],axis=0))/n
-            m_cases_std = 100*np.cumsum(np.std(total[ti,:,:],axis=0))/n
+            m_cases_av = 100*(np.average(total[ti,:,:],axis=0))/n
+            m_cases_std = 100*(sem(total[ti,:,:],axis=0))/n
             if c != '1_1_1_1':
                 #plot
                 ax1.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
-                ax1.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax1.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.fill_between(np.arange(total.shape[2]),m_cases_av-m_cases_std,m_cases_av+m_cases_std,color = colors[c],alpha=0.5)
+                #ax1.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
             else:
                 ax2.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
                 ax2.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
@@ -414,10 +422,10 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
 #plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
