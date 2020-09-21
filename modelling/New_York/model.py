@@ -23,7 +23,8 @@ parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num li
 parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
 parser.add_argument('--num_initial', nargs=1, type= int, default=sys.stdin, help = 'Num initial nodes in net.')
 parser.add_argument('--pseudo_count', nargs=1, type= int, default=sys.stdin, help = 'Pseudo count (number of nodes).')
-parser.add_argument('--seed', nargs=1, type= int, default=sys.stdin, help = 'Seed for random initializer of network graph.')
+parser.add_argument('--net_seed', nargs=1, type= int, default=sys.stdin, help = 'Seed for random initializer of network graph.')
+parser.add_argument('--np_seed', nargs=1, type= int, default=sys.stdin, help = 'Seed for random initializer of network graph.')
 parser.add_argument('--outdir', nargs=1, type= str, default=sys.stdin, help = 'Path to outdir.')
 
 ###FUNCTIONS###
@@ -141,20 +142,19 @@ def read_and_format_data(datadir, outdir):
         # plt.close()
         return serial_interval, f, N
 
-def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,seed):
+def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
-        #n = 2385643 # number of nodes
-        #m = 5 #Number of edges to attach from a new node to existing nodes - should be varied
-        Graph = nx.barabasi_albert_graph(n,m,seed=seed)
+
+        Graph = nx.barabasi_albert_graph(n,m,seed=net_seed)
         degrees = np.array(Graph.degree)[:,1]
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
-        outname = outdir+str(n)+'_'+str(m)+'_'+str(seed)
-
-        for s in [*spread_reduction.values()]:
-            outname+='_'+str(s)
+        # outname = outdir+str(n)+'_'+str(m)+'_'+str(seed)
+        #
+        # for s in [*spread_reduction.values()]:
+        #     outname+='_'+str(s)
         #np.save(outname+'_edges.npy', edges)
 
         #Population
@@ -348,7 +348,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
             result_df[age_groups[ai]+' deaths'] = deaths[ai,:]
             result_df[age_groups[ai]+' cases']=num_new_infections_age_group[age_groups[ai]]
         result_df['perc_above_left']=np.array(num_above_left)/max(num_above_left)
-        outname = outdir+'results_'+str(m)+'_'+str(seed)
+        outname = outdir+'results_'+str(m)+'_'+str(net_seed)+'_'+str(np_seed)
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)
         result_df.to_csv(outname+'.csv')
@@ -365,9 +365,13 @@ s = args.s[0].split('_')
 num_initial = args.num_initial[0]
 pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
-seed = args.seed[0]
+net_seed = args.net_seed[0]
+np_seed = args.np_seed[0]
 outdir = args.outdir[0]
 
+#Seed np random seed
+np.random.seed(np_seed)
+#Initial reduction
 spread_reduction =  {'0-19':1,'20-49':1,'50-69':1,'70+':1}
 ai=0
 for ag in spread_reduction:
@@ -378,4 +382,4 @@ for ag in spread_reduction:
 serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
-simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,seed)
+simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
