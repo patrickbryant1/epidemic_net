@@ -95,6 +95,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                     except:
                         print(seed)
                         break
+                pdb.set_trace()
                 #Scale to New York
                 ag_deaths = ag_deaths*(8336817/n)
                 ag_deaths_av = np.cumsum(np.average(ag_deaths,axis=0))
