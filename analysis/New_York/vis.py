@@ -11,7 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr,sem
 import pdb
 
 
@@ -47,8 +47,8 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     '''
 
     ms = all_results['m'].unique()
-    seeds = all_results['seed'].unique()
-
+    net_seeds = all_results['net_seed'].unique()
+    np_seeds = all_results['np_seed'].unique()
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
     i=4
@@ -77,9 +77,10 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
     #Go through all ms
     for m in ms:
+
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),len(seeds),int(num_days)))
+        total = np.zeros((len(colors.keys()),len(net_seeds)*len(np_seeds),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
@@ -87,27 +88,30 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             for c in colors:
                 m_combo_results = m_results[m_results['combo']==c]
                 #Save deaths
-                ag_deaths = np.zeros((len(seeds),num_days))
-                for seed in seeds:
-                    m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
-                    try:
-                        ag_deaths[seed,:] = np.array(m_combo_seed_results[ag+' deaths']) #Get deaths for combo and ag
-                    except:
-                        print(seed)
-                        break
-                pdb.set_trace()
+                ag_deaths = np.zeros((len(net_seeds)*len(np_seeds),num_days))
+                pos = 0
+                for net_seed in net_seeds:
+                    m_combo_net_results = m_combo_results[m_combo_results['net_seed']==net_seed]
+                    for np_seed in np_seeds:
+                        m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
+                        try:
+                            ag_deaths[pos,:] = np.array(m_combo_np_net_results[ag+' deaths']) #Get deaths for combo and ag
+                        except:
+                            pdb.set_trace()
+                        pos+=1
+
                 #Scale to New York
                 ag_deaths = ag_deaths*(8336817/n)
                 ag_deaths_av = np.cumsum(np.average(ag_deaths,axis=0))
-                ag_deaths_std = np.cumsum(np.std(ag_deaths,axis=0))
+                ag_deaths_std = np.cumsum(sem(ag_deaths,axis=0))
                 x=np.arange(ag_deaths.shape[1])
                 ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
                 ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
                 ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
-
                 #Add to total
                 total[ti,:,:] +=ag_deaths
                 ti+=1
+
             #Format and save fig
             plt.xticks(x_dates, dates, rotation='vertical')
             ax.set_ylabel('Deaths')
@@ -135,15 +139,15 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
         for c in colors:
             m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
-            m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
+            m_deaths_std = np.cumsum(sem(total[ti,:,:],axis=0))
             if c != '1_1_1_1':
                 ax1.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
-                ax1.plot(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax1.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
+                #ax1.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
             else:
                 ax2.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
-                ax2.plot(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax2.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+                ax2.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
+                #ax2.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
 
             R,p = pearsonr(o_deaths,m_deaths_av)
             print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
@@ -167,6 +171,28 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
         plt.close()
 
+        #Investigate the relationship btw randomness and final result
+        i=0
+        np_seed_results = {}
+        total = np.cumsum(total,axis=2)
+        for net_seed in net_seeds:
+            for np_seed in np_seeds:
+                if np_seed in [*np_seed_results.keys()]:
+                    np_seed_results[np_seed].append(total[:,i,-1])
+                else:
+                    np_seed_results[np_seed] = [total[:,i,-1]]
+                i+=1
+
+        #Plot
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        for key in np_seed_results:
+            av_seed_res = np.average(np.array(np_seed_results[key]))
+
+            sns.distplot(np.array(np_seed_results[key]))
+        fig.tight_layout()
+        fig.savefig(outdir+'deaths_'+str(m)+'_np_seed.png', format='png', dpi=300)
+        plt.close()
+    pdb.set_trace()
     return None
 
 def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
@@ -370,8 +396,10 @@ except:
         info = name.split('/')[-1].split('.')[0]
         m = int(info.split('_')[1])
         resultdf['m']=m
-        resultdf['seed']=int(info.split('_')[2])
+        resultdf['net_seed']=int(info.split('_')[2])
+        resultdf['np_seed']=int(info.split('_')[3])
         resultdf['combo']=info[-7:]
+
         #append df
         all_results = all_results.append(resultdf)
     #save
@@ -389,12 +417,12 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
 plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
-plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
+#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
-plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
+#plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)

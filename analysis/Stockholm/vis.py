@@ -11,7 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, sem
 import pdb
 
 
@@ -132,17 +132,22 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
 
         #Total
         fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
         ti=0
         o_deaths = np.cumsum(observed_deaths)
         print(m)
         for c in colors:
             m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
             m_deaths_std = np.cumsum(np.std(total[ti,:,:],axis=0))
-            ax.plot(np.arange(total.shape[2])[5:], m_deaths_av[:-5], color = colors[c], linewidth=1)
-            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]-m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
-            ax.plot(np.arange(total.shape[2])[5:],m_deaths_av[:-5]+m_deaths_std[:-5],color = colors[c],linewidth=0.5, linestyle='dashed')
+            if c != '1_1_1_1_1_1':
+                ax.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
+                ax.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
+                #ax.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+            else:
+                ax2.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
+                ax2.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)            
 
-            R,p = pearsonr(o_deaths[5:],m_deaths_av[:-5])
+            R,p = pearsonr(o_deaths,m_deaths_av)
             print(labels[c]+','+str(np.average(np.absolute(o_deaths[5:]-m_deaths_av[:-5])))+','+str(R))
             ti+=1
 
@@ -155,6 +160,17 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, weeks, n, we
         ax.set_ylabel('Deaths')
         fig.tight_layout()
         fig.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
+        plt.close()
+
+        ax2.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
+        plt.xticks(x_weeks, weeks, rotation='vertical')
+        ax2.set_title('m='+str(m))
+        #ax.set_ylim(yscale[m])
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
+        ax2.set_ylabel('Deaths')
+        fig2.tight_layout()
+        fig2.savefig(outdir+'deaths_'+str(m)+'_total_100.png', format='png', dpi=300)
         plt.close()
 
     return None
