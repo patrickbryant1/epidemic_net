@@ -87,8 +87,8 @@ def read_and_format_data(datadir, outdir):
         mobility_data['date']=pd.to_datetime(mobility_data['date'], format='%Y/%m/%d')
         #Join epidemic data and mobility data
         epidemic_data = pd.merge(epidemic_data,mobility_data, left_on = 'date', right_on ='date', how = 'right')
-        epidemic_data = epidemic_data.dropna()
-        N=len(epidemic_data)+11 #11 extra days
+        epidemic_data = epidemic_data.reset_index()
+        N=len(epidemic_data)+4 #Data starts on 15 Feb, but epidemic is modelled from 11 Feb --> 4 extra days
 
         #SI
         serial_interval = serial_interval_distribution(N)
@@ -159,13 +159,13 @@ def read_and_format_data(datadir, outdir):
         y[5,:] = -y[5,:]
         plt.plot(np.arange(y.shape[1]),np.average(y,axis=0), label = 'Average', linewidth=3, color = 'k')
         plt.legend()
-        plt.title('New York mobility')
+        plt.title('Spain mobility')
         plt.tight_layout()
         plt.close()
 
         mob_data = np.zeros(N)
-        mob_data[11:]=np.average(y,axis=0)
-        pdb.set_trace()
+        mob_data[4:]=np.average(y,axis=0)
+
         return serial_interval, f, N, mob_data
 
 def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
@@ -183,15 +183,14 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         #np.save(outname+'_edges.npy', edges)
 
         #Population
-        age_groups = ['0-19','20-49','50-69','70+']
-        population_shares = [0.23,0.45,0.22,0.10]
-        #Lockdown 22 March: https://www.bbc.com/news/world-us-canada-52757150
-        #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 17 March = 18 Feb
+        age_groups = ['All']
+        population_shares = [1]
+        #Lockdown mid March (15 th)
+        #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 10 March = 11 Feb
         #There are thus 33 days (28+5) until Lockdown
-        #The data starts at 29th feb --> have to remove 11 days in the beginning
-        day_of_introduction = 33
-        #Opening on 25 April --> 39 days after 17 March --> day 72
-        day_of_opening = 132
+        #Don't have to worry about this - will be taken care of by mobility relation
+
+
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)
@@ -223,7 +222,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         I.extend(initial_infections)
         num_infected_day = [num_initial]
         num_new_infections = [num_initial]
-        num_new_infections_age_group = {'0-19':[],'20-49':[],'50-69':[],'70+':[]}
+        num_new_infections_age_group = {'All':[]}
 
         #Add the initial infections per age group
         for ag in num_new_infections_age_group:
@@ -437,7 +436,7 @@ def reconnect(edges,m):
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
-s = args.s[0].split('_')
+s = args.s[0]
 num_initial = args.num_initial[0]
 pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
@@ -447,15 +446,12 @@ outdir = args.outdir[0]
 
 #Seed np random seed
 np.random.seed(np_seed)
-#Initial reduction
-spread_reduction =  {'All':1}
-ai=0
-for ag in spread_reduction:
-    spread_reduction[ag] = int(s[ai])
-    ai+=1
+#Spread reduction
+spread_reduction =  {'All':int(s)}
 
 #Read and format data
 serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
+
 simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
