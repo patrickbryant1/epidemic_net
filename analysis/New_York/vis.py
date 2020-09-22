@@ -75,8 +75,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     fig.savefig(outdir+'markers_100.png', format='png', dpi=300)
     plt.close()
 
-    #Offset
-    offset=len(all_results)-num_days
+
     #Go through all ms
     for m in ms:
 
@@ -96,6 +95,8 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                     m_combo_net_results = m_combo_results[m_combo_results['net_seed']==net_seed]
                     for np_seed in np_seeds:
                         m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
+                        #Offset
+                        offset=len(m_combo_np_net_results)-num_days
                         try:
                             ag_deaths[pos,:] = np.array(m_combo_np_net_results[ag+' deaths'][offset:]) #Get deaths for combo and ag
                         except:
@@ -212,8 +213,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     net_seeds = all_results['net_seed'].unique()
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
-    #Offset
-    offset=len(all_results)-num_days
+
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
@@ -232,6 +232,8 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
                     m_combo_net_results = m_combo_results[m_combo_results['net_seed']==net_seed]
                     for np_seed in np_seeds:
                         m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
+                        #Offset
+                        offset=len(m_combo_np_net_results)-num_days
                         try:
                             ag_cases[pos,:] = np.array(m_combo_np_net_results[ag+' cases'][offset:]) #Get deaths for combo and ag
                         except:
