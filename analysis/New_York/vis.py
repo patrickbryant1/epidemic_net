@@ -102,8 +102,11 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
                 #Scale to New York
                 ag_deaths = ag_deaths*(8336817/n)
-                ag_deaths_av = np.cumsum(np.average(ag_deaths,axis=0))
-                ag_deaths_std = np.cumsum(sem(ag_deaths,axis=0))
+                #Cumulative
+                ag_deaths = np.cumsum(ag_deaths,axis=1)
+                #Average
+                ag_deaths_av = np.average(ag_deaths,axis=0)
+                ag_deaths_std = sem(ag_deaths,axis=0)
                 x=np.arange(ag_deaths.shape[1])
                 ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
                 ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
@@ -138,8 +141,10 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
         ax2.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
 
         for c in colors:
-            m_deaths_av = np.cumsum(np.average(total[ti,:,:],axis=0))
-            m_deaths_std = np.cumsum(sem(total[ti,:,:],axis=0))
+            m_deaths = np.cumsum(total[ti,:,:],axis=1)
+            m_deaths_av = np.average(total[ti,:,:],axis=0)
+            m_deaths_std = sem(total[ti,:,:],axis=0)
+            pdb.set_trace()
             if c != '1_1_1_1':
                 ax1.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
                 ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
@@ -422,7 +427,7 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
