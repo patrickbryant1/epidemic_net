@@ -157,14 +157,17 @@ def read_and_format_data(datadir, outdir):
             plt.plot(np.arange(y.shape[1]),y[m,:], label = sector)
         #Reverse residential
         y[5,:] = -y[5,:]
+        plt.plot(np.arange(y.shape[1]),np.average(y,axis=0), label = 'Average', linewidth=3, color = 'k')
         plt.legend()
-        plt.show()
-        pdb.set_trace()
+        plt.title('New York mobility')
+        plt.tight_layout()
+        plt.close()
 
+        mob_data = np.zeros(N)
+        mob_data[11:]=np.average(y,axis=0)
+        return serial_interval, f, N, mob_data
 
-        return serial_interval, f, N
-
-def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
+def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -242,6 +245,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spr
             #Spread infection
             #Save the new infections
             new_infections = np.array([])
+
             inf_nodes = int(np.round(inf_prob)) #Need to reach >0.5 to spread the infection
             if inf_nodes>0 and len(I)>0: #If there are nodes that can spread the infection
                 if len(I)>inf_nodes:
@@ -258,24 +262,19 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spr
                     selected_spread_nodes.append(inode) #Save to spread nodes
                     #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
-                        #Go through all connections to see what age groups each connected node belongs
-                        if d>= day_of_introduction-1: #Increase reconnection after Opening
-                            if d>= day_of_opening-1: #Increase reconnection after Opening to compare results.
-                                spread_reduction = increased_spread_reduction
-
-                            selected_connections = []
-                            for connection in inode_connections:
-                                for ag in ag_nodes: #Check age group
-                                    if connection in ag_nodes[ag]:
-                                        if spread_reduction[ag]!=1: #If the reduction is 1, all spread should happen
-                                            #See if node should be infected based on reduction in infection probability
-                                            if np.random.randint(spread_reduction[ag])==spread_reduction[ag]-1:
-                                                selected_connections.append(connection)
-
-                                        else:
+                        selected_connections = []
+                        for connection in inode_connections:
+                            for ag in ag_nodes: #Check age group
+                                if connection in ag_nodes[ag]:
+                                    if spread_reduction[ag]!=1: #If the reduction is 1, all spread should happen
+                                        #See if node should be infected based on reduction in infection probability
+                                        if np.random.randint(spread_reduction[ag])==spread_reduction[ag]-1:
                                             selected_connections.append(connection)
-                            #Set new connections based on reduced infection probabilities
-                            inode_connections = np.array(selected_connections)
+
+                                    else:
+                                        selected_connections.append(connection)
+                        #Set new connections based on reduced infection probabilities
+                        inode_connections = np.array(selected_connections)
 
                         new_infections = np.append(new_infections, inode_connections)
                         #Remove infectious node from edges
@@ -342,10 +341,10 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spr
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
-            if d< day_of_introduction-1 or d >= day_of_opening-1:
-                edges = reconnect(edges,m*2)
-            else:
-                edges = reconnect(edges,m)
+            #Reduce the inf prob according to the mob data
+            m_edges = 5*np.exp(mob_data[d-1]/100)
+            print(m_edges)
+            edges = reconnect(edges,m_edges)
         #Calculate deaths
         deaths = np.zeros((f.shape[0],num_days))
         for ai in range(deaths.shape[0]):
@@ -405,7 +404,7 @@ def reconnect(edges,m):
 
 
     #Get new edges
-    num_new_edges = int(((m*2)*((m*2)-1))/2)
+    num_new_edges = int((m*(m-1))/2)
     new_edges = np.zeros((num_new_edges,2))
     fetched_edges = 0 #Edge index
 
@@ -440,14 +439,13 @@ outdir = args.outdir[0]
 np.random.seed(np_seed)
 #Initial reduction
 spread_reduction =  {'0-19':1,'20-49':1,'50-69':1,'70+':1}
-increased_spread_reduction =  {'0-19':2,'20-49':2,'50-69':2,'70+':2} #Should make it proportional to mobility instead
 ai=0
 for ag in spread_reduction:
     spread_reduction[ag] = int(s[ai])
     ai+=1
 
 #Read and format data
-serial_interval, f, N = read_and_format_data(datadir, outdir)
+serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
-simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
+simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed)

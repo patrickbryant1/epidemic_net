@@ -75,7 +75,8 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     fig.savefig(outdir+'markers_100.png', format='png', dpi=300)
     plt.close()
 
-
+    #Offset
+    offset=len(all_results)-num_days
     #Go through all ms
     for m in ms:
 
@@ -96,7 +97,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                     for np_seed in np_seeds:
                         m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
                         try:
-                            ag_deaths[pos,:] = np.array(m_combo_np_net_results[ag+' deaths']) #Get deaths for combo and ag
+                            ag_deaths[pos,:] = np.array(m_combo_np_net_results[ag+' deaths'][offset:]) #Get deaths for combo and ag
                         except:
                             pdb.set_trace()
                         pos+=1
@@ -138,8 +139,9 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
         ti=0
         o_deaths = observed_deaths
         print(m)
-        ax1.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
-        ax2.bar(np.arange(total.shape[2]), o_deaths, alpha = 0.5, label = 'Observation')
+
+        ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
+        ax2.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
 
         for c in combos:
             m_deaths_av = np.average(total[ti,:,:],axis=0)
@@ -210,6 +212,8 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     net_seeds = all_results['net_seed'].unique()
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
+    #Offset
+    offset=len(all_results)-num_days
     #Go through all ms
     for m in ms:
         m_results = all_results[all_results['m']==m]
@@ -229,7 +233,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
                     for np_seed in np_seeds:
                         m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
                         try:
-                            ag_cases[pos,:] = np.array(m_combo_np_net_results[ag+' cases']) #Get deaths for combo and ag
+                            ag_cases[pos,:] = np.array(m_combo_np_net_results[ag+' cases'][offset:]) #Get deaths for combo and ag
                         except:
                             pdb.set_trace()
                         pos+=1
