@@ -237,7 +237,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                     #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
                         #Go through all connections to see what age groups each connected node belongs
-                        if d>= day_of_introduction-1 and d <day_of_opening:
+                        if d>= day_of_introduction-1 and d <day_of_opening: #Increase reconnection after Opening to compare results.
                             selected_connections = []
                             for connection in inode_connections:
                                 for ag in ag_nodes: #Check age group
@@ -253,7 +253,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                             inode_connections = np.array(selected_connections)
 
                         new_infections = np.append(new_infections, inode_connections)
-                        #Remove from edges
+                        #Remove infectious node from edges
                         edges = edges[edges[:,0]!=inode]
                         edges = edges[edges[:,1]!=inode]
                         R.append(inode)
@@ -316,6 +316,8 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
             num_removed.append(len(R)-prevR) #The difference will be the nodes that have issued their infection
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
+            #Dynamic features - reconnect edges
+            edges = reconnect(edges,m)
 
         #Calculate deaths
         deaths = np.zeros((f.shape[0],num_days))
@@ -355,6 +357,43 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         result_df.to_csv(outname+'.csv')
 
         return None
+
+
+def reconnect(edges,m):
+    '''Simulate new connections by randomly connecting remaining edges.
+    This will simulate movement - as of a dynamic network
+    '''
+
+    remaining_nodes = np.unique(edges)
+    def get_new_edge(remaining_nodes):
+        '''Get a new edge
+        '''
+        #Choose 2 random nodes to reconnect
+        new_edge = np.random.choice(remaining_nodes,2, replace=False)
+
+        #Sort to get order as in edges
+        new_edge = np.sort(new_edge)
+
+        return new_edge
+
+
+    #Get new edges
+    num_new_edges = int(((m*2)*((m*2)-1))/2)
+    new_edges = np.zeros((num_new_edges,2))
+    fetched_edges = 0 #Edge index
+
+    while fetched_edges < num_new_edges:
+        new_edge = get_new_edge(remaining_nodes)
+        #If the edge exists, continue - otherwise save it
+        if len(np.where((edges[:,0]==new_edge[0]) & (edges[:,1]==new_edge[1]))[0])<1:
+            continue
+        else:
+            new_edges[fetched_edges]=new_edge
+            fetched_edges+=1
+
+    #concat
+    edges  =np.concatenate([edges,new_edges])
+    return edges
 
 
 
