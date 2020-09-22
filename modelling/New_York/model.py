@@ -142,7 +142,7 @@ def read_and_format_data(datadir, outdir):
         # plt.close()
         return serial_interval, f, N
 
-def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
+def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -165,7 +165,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
         #There are thus 33 days (28+5) until Lockdown
         day_of_introduction = 33
         #Opening on 25 April --> 39 days after 17 March --> day 72
-        day_of_opening = 72
+        day_of_opening = 132
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)
@@ -237,7 +237,10 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
                     #Check that there are new connections (not isolated node - surrounding infected)
                     if len(inode_connections)>0:
                         #Go through all connections to see what age groups each connected node belongs
-                        if d>= day_of_introduction-1 and d <day_of_opening: #Increase reconnection after Opening to compare results.
+                        if d>= day_of_introduction-1: #Increase reconnection after Opening
+                            if d>= day_of_opening-1: #Increase reconnection after Opening to compare results.
+                                spread_reduction = increased_spread_reduction
+
                             selected_connections = []
                             for connection in inode_connections:
                                 for ag in ag_nodes: #Check age group
@@ -317,8 +320,10 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,p
             remaining_edges.append(edges.shape[0])
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
-            edges = reconnect(edges,m)
-
+            if d< day_of_introduction-1 or d >= day_of_opening-1:
+                edges = reconnect(edges,m*2)
+            else:
+                edges = reconnect(edges,m)
         #Calculate deaths
         deaths = np.zeros((f.shape[0],num_days))
         for ai in range(deaths.shape[0]):
@@ -413,6 +418,7 @@ outdir = args.outdir[0]
 np.random.seed(np_seed)
 #Initial reduction
 spread_reduction =  {'0-19':1,'20-49':1,'50-69':1,'70+':1}
+increased_spread_reduction =  {'0-19':2,'20-49':2,'50-69':2,'70+':2} #Should make it proportional to mobility instead
 ai=0
 for ag in spread_reduction:
     spread_reduction[ag] = int(s[ai])
@@ -422,4 +428,4 @@ for ag in spread_reduction:
 serial_interval, f, N = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
-simulate(serial_interval, f, N, outdir, n, m, spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
+simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
