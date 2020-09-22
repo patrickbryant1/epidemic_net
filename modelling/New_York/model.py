@@ -10,6 +10,7 @@ import pandas as pd
 from scipy.stats import gamma, lognorm
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 import pdb
 
 
@@ -76,8 +77,18 @@ def read_and_format_data(datadir, outdir):
 
         #Get epidemic data
         epidemic_data = pd.read_csv(datadir+'new_york.csv')
-        N=len(epidemic_data)
 
+        #Convert to datetime
+        epidemic_data['date']=pd.to_datetime(epidemic_data['DATE_OF_INTEREST'])
+
+        #Mobility data
+        mobility_data = pd.read_csv(datadir+'Global_Mobility_New_York.csv')
+        #Convert to datetime
+        mobility_data['date']=pd.to_datetime(mobility_data['date'], format='%Y/%m/%d')
+        #Join epidemic data and mobility data
+        epidemic_data = pd.merge(epidemic_data,mobility_data, left_on = 'date', right_on ='date', how = 'right')
+        epidemic_data = epidemic_data.dropna()
+        N=len(epidemic_data)+11 #11 extra days
 
         #SI
         serial_interval = serial_interval_distribution(N)
@@ -119,34 +130,44 @@ def read_and_format_data(datadir, outdir):
         #Multiplying s and h yields fraction dead of fraction survived
         f = s*h #This will be fed to the Stan Model
 
-        # age_keys =[*ifr_by_age_group.keys()]
-        # colors = ['royalblue', 'navy','lightskyblue', 'darkcyan', 'mediumseagreen', 'paleturquoise' ]
-        # import matplotlib
-        # import matplotlib.pyplot as plt
-        # matplotlib.rcParams.update({'font.size': 7})
-        # fig, ax = plt.subplots(figsize=(6.5/2.54, 4.5/2.54))
-        # for fi in range(len(f)):
-        #     plt.plot(np.arange(N),f[fi,:],label=age_keys[fi], color = colors[fi])
-        # plt.legend()
-        # ax.spines['top'].set_visible(False)
-        # ax.spines['right'].set_visible(False)
-        # ax.set_title('Fatality rate')
-        # ax.set_xlabel('Infection day')
-        # ax.set_ylabel('Probability')
-        # fig.tight_layout()
-        # plt.savefig(outdir+'fatality_rate.png', format='png', dpi=300)
-        # plt.close()
-        # pdb.set_trace()
-        # plt.plot(np.arange(len(serial_interval)),serial_interval)
-        # plt.savefig(outdir+'SI.png')
-        # plt.close()
+
+        #Mobility data
+        #Covariates (mobility data from Google)
+        #Construct a 1-week sliding average to smooth the mobility data
+        mob_sectors = ['retail_and_recreation_percent_change_from_baseline',
+       'grocery_and_pharmacy_percent_change_from_baseline',
+       'parks_percent_change_from_baseline',
+       'transit_stations_percent_change_from_baseline',
+       'workplaces_percent_change_from_baseline',
+       'residential_percent_change_from_baseline']
+        y = np.zeros((len(mob_sectors),len(epidemic_data)))
+        for m in range(len(mob_sectors)):
+            sector = mob_sectors[m]
+            mob_i = np.array(epidemic_data[sector])
+
+            for i in range(7,len(mob_i)+1):
+                #Check that there are no NaNs
+                if np.isnan(mob_i[i-7:i]).any():
+                    #If there are NaNs, loop through and replace with value from prev date
+                    for i_nan in range(i-7,i):
+                        if np.isnan(mob_i[i_nan]):
+                            mob_i[i_nan]=mob_i[i_nan-1]
+                y[m,i-1]=np.average(mob_i[i-7:i])#Assign average
+            y[m,0:6] = y[m,6]#Assign first week
+            plt.plot(np.arange(y.shape[1]),y[m,:], label = sector)
+        #Reverse residential
+        y[5,:] = -y[5,:]
+        plt.legend()
+        plt.show()
+        pdb.set_trace()
+
+
         return serial_interval, f, N
 
 def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
-
         Graph = nx.barabasi_albert_graph(n,m,seed=net_seed)
         degrees = np.array(Graph.degree)[:,1]
         edges = np.array(Graph.edges) #shape=n,2
@@ -163,6 +184,7 @@ def simulate(serial_interval, f, N, outdir, n, m, spread_reduction,increased_spr
         #Lockdown 22 March: https://www.bbc.com/news/world-us-canada-52757150
         #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 17 March = 18 Feb
         #There are thus 33 days (28+5) until Lockdown
+        #The data starts at 29th feb --> have to remove 11 days in the beginning
         day_of_introduction = 33
         #Opening on 25 April --> 39 days after 17 March --> day 72
         day_of_opening = 132
