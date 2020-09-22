@@ -342,9 +342,9 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
             #Reduce the inf prob according to the mob data
-            m_edges = 10*np.exp(mob_data[d-1]/100)
-            print(m_edges)
-            edges = reconnect(edges,m_edges)
+            m_edges = m*2*np.exp(mob_data[d-1]/100)
+            if len(edges)>0:
+                edges = reconnect(edges,m_edges)
         #Calculate deaths
         deaths = np.zeros((f.shape[0],num_days))
         for ai in range(deaths.shape[0]):
@@ -405,20 +405,29 @@ def reconnect(edges,m):
 
     #Get new edges
     num_new_edges = int((m*(m-1))/2)
-    new_edges = np.zeros((num_new_edges,2))
+    new_edges = []
     fetched_edges = 0 #Edge index
 
     while fetched_edges < num_new_edges:
         new_edge = get_new_edge(remaining_nodes)
-        #If the edge exists, continue - otherwise save it
+
+        #If the edge exists, continue (count it as being both removed and reconnected) - otherwise save it
         if len(np.where((edges[:,0]==new_edge[0]) & (edges[:,1]==new_edge[1]))[0])<1:
+            fetched_edges+=1
             continue
         else:
-            new_edges[fetched_edges]=new_edge
+            #Remove another edge
+            remove_index = int(np.random.choice(remaining_nodes,1, replace=False)[0])
+            edges = np.concatenate([edges[:remove_index],edges[remove_index+1:]])
+            new_edges.append(new_edge)
             fetched_edges+=1
 
+
+
+
     #concat
-    edges  =np.concatenate([edges,new_edges])
+    if len(new_edges)>1:
+        edges =np.concatenate([edges,np.array(new_edges)])
     return edges
 
 

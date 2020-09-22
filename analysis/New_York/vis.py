@@ -162,6 +162,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             ti+=1
 
 
+
         ax1.set_xticks(x_dates)
         ax1.set_xticklabels(dates, rotation='vertical')
         ax1.set_title('m='+str(m))
@@ -437,7 +438,7 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
 plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
