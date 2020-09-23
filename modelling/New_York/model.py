@@ -22,6 +22,7 @@ parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = '
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
 parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
+parser.add_argument('--alpha', nargs=1, type= float, default=sys.stdin, help = 'Float to multiply mobility impact with.')
 parser.add_argument('--num_initial', nargs=1, type= int, default=sys.stdin, help = 'Num initial nodes in net.')
 parser.add_argument('--pseudo_count', nargs=1, type= int, default=sys.stdin, help = 'Pseudo count (number of nodes).')
 parser.add_argument('--net_seed', nargs=1, type= int, default=sys.stdin, help = 'Seed for random initializer of network graph.')
@@ -167,7 +168,7 @@ def read_and_format_data(datadir, outdir):
         mob_data[11:]=np.average(y,axis=0)
         return serial_interval, f, N, mob_data
 
-def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
+def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alpha,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
@@ -342,7 +343,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
             #Reduce the inf prob according to the mob data
-            m_edges = m*2*np.exp(mob_data[d-1]/100)
+            m_edges = 0.1*(len(edges))*np.exp(alpha*mob_data[d-1]/100)
             if len(edges)>0:
                 edges = reconnect(edges,m_edges)
         #Calculate deaths
@@ -404,7 +405,8 @@ def reconnect(edges,m):
 
 
     #Get new edges
-    num_new_edges = int((m*(m-1))/2)
+    num_new_edges = int(m)
+    print(num_new_edges)
     new_edges = []
     fetched_edges = 0 #Edge index
 
@@ -437,6 +439,7 @@ args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
 s = args.s[0].split('_')
+alpha = args.alpha[0]
 num_initial = args.num_initial[0]
 pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
@@ -457,4 +460,4 @@ for ag in spread_reduction:
 serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
-simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
+simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alpha,num_initial,pseudo_count,net_seed, np_seed)

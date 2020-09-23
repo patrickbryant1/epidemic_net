@@ -52,6 +52,19 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     combos = all_results['combo'].unique()
     alphas = all_results['alpha'].unique()
 
+    #Plot Markers
+    fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
+    i=4
+    for c in colors:
+        ax.plot([1,1.8],[i]*2, color = colors[c], linewidth=4)
+        ax.text(2.001,i,'alpha = '+c)
+        i-=1
+    ax.set_xlim([0.999,3.9])
+    ax.axis('off')
+    fig.tight_layout()
+    fig.savefig(outdir+'markers.png', format='png', dpi=300)
+    plt.close()
+
 
     #Go through all ms
     for m in ms:
@@ -137,7 +150,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
             ax1.set_xticks(x_dates)
             ax1.set_xticklabels(dates, rotation='vertical')
-            ax1.set_title('m='+str(m))
+            ax1.set_title('m='+str(m)+'|'+labels[c])
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
             ax1.set_ylabel('Deaths')
@@ -410,7 +423,7 @@ except:
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 224]
 dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 21']
-colors = {'1.1':'k', '1.125':'g', '1.13':'r', '1.14':'orange', '1.2':'cornflowerblue', '1.3':'grey', '1.5':'royalblue'}
+colors = {'1.1':'grey', '1.2':'g','1.3':'cornflowerblue'} #, '1.3':'grey', '1.5':'royalblue'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths
