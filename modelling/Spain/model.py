@@ -89,8 +89,8 @@ def read_and_format_data(datadir, outdir):
         #Join epidemic data and mobility data
         epidemic_data = pd.merge(epidemic_data,mobility_data, left_on = 'date', right_on ='date', how = 'right')
         epidemic_data = epidemic_data.reset_index()
-
-        N=len(epidemic_data)+4 #Data starts on 15 Feb, but epidemic is modelled from 11 Feb --> 4 extra days
+        N=len(epidemic_data)+4+10 #Data starts on 15 Feb, but epidemic is modelled from 11 Feb --> 4 extra days
+        #The end of the mobility data is on Sep 11, have deaths til 21 --> prolong 10 days
 
         #SI
         serial_interval = serial_interval_distribution(N)
@@ -167,7 +167,8 @@ def read_and_format_data(datadir, outdir):
         plt.close()
 
         mob_data = np.zeros(N)
-        mob_data[4:]=np.average(y,axis=0)
+        mob_data[4:-10]=np.average(y,axis=0)
+        mob_data[-10:]=mob_data[-11]
 
         return serial_interval, f, N, mob_data
 
@@ -344,7 +345,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction, al
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
             #Reduce the inf prob according to the mob data
-            m_edges = 0.1*(n-len(R))*np.exp(alpha*mob_data[d-1]/100)
+            m_edges = 0.1*(len(edges))*np.exp(alpha*mob_data[d-1]/100)
             if len(edges)>0:
                 edges = reconnect(edges,m_edges)
         #Calculate deaths
@@ -462,6 +463,6 @@ for ag in spread_reduction:
 #Read and format data
 serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
 #Simulate
-print('Simulating',m)
+print('Simulating',m, s, alpha)
 
 simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction, alpha, num_initial,pseudo_count,net_seed, np_seed)

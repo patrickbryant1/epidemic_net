@@ -135,7 +135,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                 ai+=1
             ci+=1
 
-            plt.legend()
             ax1.set_xticks(x_dates)
             ax1.set_xticklabels(dates, rotation='vertical')
             ax1.set_title('m='+str(m))
@@ -363,7 +362,7 @@ outdir = args.outdir[0]
 
 #Get epidemic data
 epidemic_data = pd.read_csv(datadir+'Spain.csv')
-epidemic_data= epidemic_data.loc[12:225] #15 feb to 11 Sep mobility data exists
+epidemic_data= epidemic_data.loc[:223] #11 feb to 21 Sep mobility data exists
 observed_deaths = np.array(np.flip(epidemic_data['deaths']))
 sm_deaths = np.zeros(observed_deaths.shape[0])
 #Smooth the deaths
@@ -376,13 +375,12 @@ for i in range(7,len(sm_deaths)+1):
     sm_deaths[i-1]=np.average(observed_deaths[i-7:i])
 sm_deaths[0:6] = sm_deaths[6] #assign the first week
 
-
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
 #Get the results
 try:
     all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/Spain/all_results.csv')
-    num_days = 214
+    num_days = 224
 
 except:
 
@@ -410,9 +408,9 @@ except:
 
 
 #xticks
-x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 214]
-dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 9']
-colors = {'1.1':'k', '1.2':'cornflowerblue', '1.3':'grey', '1.5':'royalblue'}
+x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 224]
+dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 21']
+colors = {'1.1':'k', '1.125':'g', '1.13':'r', '1.14':'orange', '1.2':'cornflowerblue', '1.3':'grey', '1.5':'royalblue'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths
