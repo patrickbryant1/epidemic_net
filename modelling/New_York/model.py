@@ -381,6 +381,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alp
         outname = outdir+'results_'+str(m)+'_'+str(net_seed)+'_'+str(np_seed)
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)
+        outname += '_'+str(alpha)
         result_df.to_csv(outname+'.csv')
 
         return None

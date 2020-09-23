@@ -51,6 +51,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
     alphas = all_results['alpha'].unique()
+    offset = num_days-198 #Only 198 days daeth data
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
     i=4
@@ -103,9 +104,9 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                         ag_deaths_av = np.average(ag_deaths,axis=0)
                         ag_deaths_std = sem(ag_deaths,axis=0)
                         x=np.arange(ag_deaths.shape[1])
-                        ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[str(alpha)], linewidth=1)
-                        ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
-                        ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                        ax.plot(np.arange(ag_deaths_av.shape[0]-offset),ag_deaths_av[offset:], color = colors[str(alpha)], linewidth=1)
+                        #ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                        #ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
                         #Add to total
 
                         total[ci,ai,:,:] +=ag_deaths
@@ -136,11 +137,10 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
             ai=0
             for a in alphas:
-                m_deaths_av = np.average(total[ci,ai,:,:],axis=0)
-                m_deaths_std = sem(total[ci,ai,:,:],axis=0)
-                ax1.plot(np.arange(total.shape[3]), m_deaths_av, color = colors[str(a)], linewidth=1, label = str(a))
-                ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[str(a)],alpha=0.5)
-
+                m_deaths_av = np.average(total[ci,ai,:,:],axis=0)[offset:]
+                m_deaths_std = sem(total[ci,ai,:,:],axis=0)[offset:]
+                ax1.plot(np.arange(m_deaths_av.shape[0]), m_deaths_av, color = colors[str(a)], linewidth=1, label = str(a))
+                ax1.fill_between(np.arange(m_deaths_av.shape[0]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[str(a)],alpha=0.5)
                 R,p = pearsonr(o_deaths,m_deaths_av)
                 print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
 
@@ -375,13 +375,23 @@ outdir = args.outdir[0]
 #Get epidemic data
 epidemic_data = pd.read_csv(datadir+'new_york.csv')
 observed_deaths = epidemic_data['Deaths']
+sm_deaths = np.zeros(observed_deaths.shape[0])
+#Smooth the deaths
+#First go through the deaths and set the negative ones to the varege of that before and after
+for i in range(len(observed_deaths)):
+    if observed_deaths[i]<0:
+        observed_deaths[i] = (observed_deaths[i-1]+observed_deaths[i+1])/2
+#Do a 7day sliding window to get more even death predictions
+for i in range(7,len(sm_deaths)+1):
+    sm_deaths[i-1]=np.average(observed_deaths[i-7:i])
+sm_deaths[0:6] = sm_deaths[6] #assign the first week
 
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
 #Get the results
 try:
     all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/New_York/all_results.csv')
-    num_days = 198
+    num_days = 207
 
 except:
 
@@ -393,7 +403,7 @@ except:
     for name in result_dfs:
         resultdf = pd.read_csv(name)
         num_days = len(resultdf)
-        info = name.split('/')[-1].split('.')[0]
+        info = name.split('/')[-1][:-4]
         m = int(info.split('_')[1])
         resultdf['m']=m
         resultdf['net_seed']=int(info.split('_')[2])
@@ -410,7 +420,7 @@ except:
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 197]
 dates = ['Feb 29', 'Mar 28', 'Apr 25','May 23', 'Jun 20','Jul 18','Aug 15', 'Sep 13']
-colors = {'1.1':'grey', '1.2':'g','1.3':'cornflowerblue'} #, '1.3':'grey', '1.5':'royalblue'}
+colors = {'1.1':'grey', '1.2':'g','1.3':'cornflowerblue', '1.4':'royalblue'} #, '1.3':'grey', '1.5':'royalblue'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths

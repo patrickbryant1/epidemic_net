@@ -14,7 +14,7 @@ for M in 1 #
           do
             for SR in '2_2_2_2' '3_3_3_3' '4_4_4_4'
               do
-                for ALPHA in 1.1 1.2 1.3
+                for ALPHA in 1.4 #1.1 1.2 1.3
                   do
                   ./model.py --datadir $DATADIR --n $N --m $M --s $SR --alpha $ALPHA --num_initial $NINITIAL --pseudo_count $PC --net_seed $NETSEED --np_seed $NPSEED --outdir $OUTDIR
                   done
