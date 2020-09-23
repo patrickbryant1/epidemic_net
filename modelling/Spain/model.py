@@ -21,7 +21,8 @@ parser = argparse.ArgumentParser(description = '''Simulate the epidemic developm
 parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
-parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
+parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction.')
+parser.add_argument('--alpha', nargs=1, type= float, default=sys.stdin, help = 'Float to multiply mobility impact with.')
 parser.add_argument('--num_initial', nargs=1, type= int, default=sys.stdin, help = 'Num initial nodes in net.')
 parser.add_argument('--pseudo_count', nargs=1, type= int, default=sys.stdin, help = 'Pseudo count (number of nodes).')
 parser.add_argument('--net_seed', nargs=1, type= int, default=sys.stdin, help = 'Seed for random initializer of network graph.')
@@ -170,7 +171,7 @@ def read_and_format_data(datadir, outdir):
 
         return serial_interval, f, N, mob_data
 
-def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
+def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction, alpha, num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
 
@@ -191,8 +192,6 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         #Lockdown mid March (15 th)
         #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 10 March = 11 Feb
         #There are thus 33 days (28+5) until Lockdown
-        day_of_introduction = 33
-
 
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
@@ -345,7 +344,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
             #Reduce the inf prob according to the mob data
-            m_edges = 100*np.exp(1.3*mob_data[d-1]/100)
+            m_edges = 1000*np.exp(alpha*mob_data[d-1]/100)
             if len(edges)>0:
                 edges = reconnect(edges,m_edges)
         #Calculate deaths
@@ -383,6 +382,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         outname = outdir+'results_'+str(m)+'_'+str(net_seed)+'_'+str(np_seed)
         for s in [*spread_reduction.values()]:
             outname+='_'+str(s)
+        outname += '_'+str(alpha)
         result_df.to_csv(outname+'.csv')
 
         return None
@@ -441,6 +441,7 @@ args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
 s = args.s[0].split('_')
+alpha = args.alpha[0]
 num_initial = args.num_initial[0]
 pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
@@ -463,4 +464,4 @@ serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
 
-simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed)
+simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction, alpha, num_initial,pseudo_count,net_seed, np_seed)

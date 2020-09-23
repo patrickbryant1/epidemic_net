@@ -50,6 +50,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     net_seeds = all_results['net_seed'].unique()
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
+    alphas = all_results['alpha'].unique()
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
     i=5
@@ -69,42 +70,51 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(m_results['combo'].unique()),len(net_seeds)*len(np_seeds),int(num_days)))
+        total = np.zeros((len(combos),len(alphas),len(net_seeds)*len(np_seeds),int(num_days)))
         for ag in age_groups:
             fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
-            ti=0
+            ci = -1 #combo index
             for c in combos:
                 m_combo_results = m_results[m_results['combo']==c]
+                ci+=1
                 #Save deaths
-                ag_deaths = np.zeros((len(net_seeds)*len(np_seeds),num_days))
-                pos = 0
-                for net_seed in net_seeds:
-                    m_combo_net_results = m_combo_results[m_combo_results['net_seed']==net_seed]
-                    for np_seed in np_seeds:
-                        m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
-                        #Offset
-                        offset=len(m_combo_np_net_results)-num_days
-                        try:
-                            ag_deaths[pos,:] = np.array(m_combo_np_net_results[ag+' deaths'][offset:]) #Get deaths for combo and ag
-                        except:
-                            pdb.set_trace()
-                        pos+=1
+                ag_deaths = np.zeros((len(alphas),len(net_seeds)*len(np_seeds),num_days))
+                ai = -1 #Alpha index
+                #Go through all alphas
+                for alpha in alphas:
+                    m_combo_alpha_results = m_combo_results[m_combo_results['alpha']==alpha]
+                    ai+=1
+                    #go through all net seeds
+                    for net_seed in net_seeds:
+                        m_combo_alpha_net_results = m_combo_alpha_results[m_combo_alpha_results['net_seed']==net_seed]
+                        #go through all np seeds
+                        for np_seed in np_seeds:
+                            m_combo_alpha_net_np_results = m_combo_alpha_net_results[m_combo_alpha_net_results['np_seed']==np_seed]
 
-                #Scale to New York
-                ag_deaths = ag_deaths*(47329979/(n))
-                #Cumulative
-                #ag_deaths = np.cumsum(ag_deaths,axis=1)
-                #Average
-                ag_deaths_av = np.average(ag_deaths,axis=0)
-                ag_deaths_std = sem(ag_deaths,axis=0)
-                x=np.arange(ag_deaths.shape[1])
-                ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
-                ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
-                ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
-                #Add to total
-                total[ti,:,:] +=ag_deaths
-                ti+=1
+
+                            try:
+                                ag_deaths[ai,ci,:] = np.array(m_combo_alpha_net_np_results[ag+' deaths']) #Get deaths for combo and ag
+
+                            except:
+                                pdb.set_trace()
+                            ai+=1
+
+                            #Scale to New York
+                            ag_deaths = ag_deaths*(47329979/(n))
+                            #Cumulative
+                            #ag_deaths = np.cumsum(ag_deaths,axis=1)
+                            #Average
+                            ag_deaths_av = np.average(ag_deaths,axis=0)
+                            ag_deaths_std = sem(ag_deaths,axis=0)
+                            x=np.arange(ag_deaths.shape[1])
+                            ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
+                            ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
+                            ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
+                            #Add to total
+
+                            total[ti,:,:] +=ag_deaths
+                            ti+=1
 
             #Format and save fig
             plt.xticks(x_dates, dates, rotation='vertical')
@@ -396,18 +406,19 @@ except:
     result_dfs = glob.glob(resultsdir+'*.csv')
     #Loop through all results dfs
     all_results = pd.DataFrame()
-    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '1_1_2_2':4, '1_1_4_4':5, '2_2_1_1':6, '4_4_1_1':7, '3_3_3_3':8}
+    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '3_3_3_3':4}
 
     for name in result_dfs:
         resultdf = pd.read_csv(name)
         num_days = len(resultdf)
         print(num_days)
-        info = name.split('/')[-1].split('.')[0]
+        info = name.split('/')[-1][:-4]
         m = int(info.split('_')[1])
         resultdf['m']=m
         resultdf['net_seed']=int(info.split('_')[2])
         resultdf['np_seed']=int(info.split('_')[3])
-        resultdf['combo']='_'.join(info.split('_')[-4:])
+        resultdf['combo']='_'.join(info.split('_')[-5:-1])
+        resultdf['alpha']=info.split('_')[-1]
 
         #append df
         all_results = all_results.append(resultdf)
@@ -418,11 +429,8 @@ except:
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 214]
 dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 9']
-colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '3_3_3_3':'grey', '4_4_4_4':'royalblue',
-        '1_1_2_2': 'springgreen', '2_4_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}
-labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%',
-        '1_1_2_2': '0-49: 100%,50+: 50%', '2_4_4_4':'0-49: 50%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
-        '4_4_1_1':'0-49: 25%,50+: 100%'}
+colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '3_3_3_3':'grey', '4_4_4_4':'royalblue'}
+labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths
 #Plot deaths
