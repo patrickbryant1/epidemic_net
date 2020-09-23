@@ -185,12 +185,12 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         age_groups = ['0-19','20-49','50-69','70+']
         population_shares = [0.23,0.45,0.22,0.10]
         #Lockdown 22 March: https://www.bbc.com/news/world-us-canada-52757150
+        #Don't have to worry about this - will be taken care of by mobility relation
         #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 17 March = 18 Feb
         #There are thus 33 days (28+5) until Lockdown
         #The data starts at 29th feb --> have to remove 11 days in the beginning
-        day_of_introduction = 33
-        #Opening on 25 April --> 39 days after 17 March --> day 72
-        day_of_opening = 132
+
+
         #Assign the nodes randomly according to the population shares
         ag_nodes = {}#Nodes per age group
         not_chosen = np.arange(n)

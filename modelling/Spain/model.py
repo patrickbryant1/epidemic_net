@@ -93,7 +93,8 @@ def read_and_format_data(datadir, outdir):
         #SI
         serial_interval = serial_interval_distribution(N)
         #Infection fatality rate
-        ifr_by_age_group = {'All':0.0083}
+        #https://www.medrxiv.org/content/10.1101/2020.08.06.20169722v1.full.pdf
+        ifr_by_age_group = {'0-19':0.0,'20-49':0.00035,'50-69':0.00645,'70+':0.058}
 
         #Infection to death distribution
         itd = infection_to_death()
@@ -183,8 +184,8 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         #np.save(outname+'_edges.npy', edges)
 
         #Population
-        age_groups = ['All']
-        population_shares = [1]
+        age_groups = ['0-19','20-49','50-69','70+']
+        population_shares = [0.20,0.40,0.26,0.14]
         #Lockdown mid March (15 th)
         #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 10 March = 11 Feb
         #There are thus 33 days (28+5) until Lockdown
@@ -222,7 +223,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         I.extend(initial_infections)
         num_infected_day = [num_initial]
         num_new_infections = [num_initial]
-        num_new_infections_age_group = {'All':[]}
+        num_new_infections_age_group = {'0-19':[],'20-49':[],'50-69':[],'70+':[]}
 
         #Add the initial infections per age group
         for ag in num_new_infections_age_group:
@@ -436,7 +437,7 @@ def reconnect(edges,m):
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
-s = args.s[0]
+s = args.s[0].split('_')
 num_initial = args.num_initial[0]
 pseudo_count = args.pseudo_count[0]
 datadir = args.datadir[0]
@@ -447,7 +448,12 @@ outdir = args.outdir[0]
 #Seed np random seed
 np.random.seed(np_seed)
 #Spread reduction
-spread_reduction =  {'All':int(s)}
+#Initial reduction
+spread_reduction =  {'0-19':1,'20-49':1,'50-69':1,'70+':1}
+ai=0
+for ag in spread_reduction:
+    spread_reduction[ag] = int(s[ai])
+    ai+=1
 
 #Read and format data
 serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
