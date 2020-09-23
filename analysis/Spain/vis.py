@@ -54,7 +54,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
     i=4
     for c in colors:
-        if c=='1':
+        if c=='1_1_1_1':
             continue
         ax.plot([1,1.8],[i]*2, color = colors[c], linewidth=4)
         ax.text(2.001,i,labels[c])
@@ -67,8 +67,8 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
-    ax.plot([1,1.8],[i]*2, color = colors['1'], linewidth=4)
-    ax.text(2.001,i,labels['1'])
+    ax.plot([1,1.8],[i]*2, color = colors['1_1_1_1'], linewidth=4)
+    ax.text(2.001,i,labels['1_1_1_1'])
     ax.set_xlim([0.999,3.9])
     ax.axis('off')
     fig.tight_layout()
@@ -104,14 +104,13 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                         pos+=1
 
                 #Scale to New York
-                ag_deaths = ag_deaths*(46754778/n)
+                ag_deaths = ag_deaths*(47329979/n)
                 #Cumulative
                 #ag_deaths = np.cumsum(ag_deaths,axis=1)
                 #Average
                 ag_deaths_av = np.average(ag_deaths,axis=0)
                 ag_deaths_std = sem(ag_deaths,axis=0)
                 x=np.arange(ag_deaths.shape[1])
-                pdb.set_trace()
                 ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
                 ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
                 ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
@@ -403,7 +402,7 @@ epidemic_data= epidemic_data.loc[12:225] #15 feb to 11 Sep mobility data exists
 observed_deaths = np.flip(epidemic_data['deaths'])
 
 #Age groups
-age_groups = ['All']
+age_groups = ['0-19','20-49','50-69','70+']
 #Get the results
 try:
     all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/Spain/all_results.csv')
@@ -414,7 +413,7 @@ except:
     result_dfs = glob.glob(resultsdir+'*.csv')
     #Loop through all results dfs
     all_results = pd.DataFrame()
-    combos = {'1':'1', '2':'2', '4':'3'}
+    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '1_1_2_2':4, '1_1_4_4':5, '2_2_1_1':6, '4_4_1_1':7}
 
     for name in result_dfs:
         resultdf = pd.read_csv(name)
@@ -433,10 +432,14 @@ except:
     all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/Spain/all_results.csv')
 
 #xticks
-x_dates = [  0,  28,  56,  84, 112, 140, 168, 197]
-dates = ['Feb 29', 'Mar 28', 'Apr 25','May 23', 'Jun 20','Jul 18','Aug 15', 'Sep 13']
-colors = {'1':'k', '2':'cornflowerblue', '4':'royalblue'}
-labels = {'1':'100%','2':'50%', '4':'25%'}
+x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 214]
+dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 9']
+colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '4_4_4_4':'royalblue',
+        '1_1_2_2': 'springgreen', '1_1_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}
+labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4':'0-49: 25%,50+: 25%',
+        '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
+        '4_4_1_1':'0-49: 25%,50+: 100%'}
+#Plot deaths
 #Plot deaths
 plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
