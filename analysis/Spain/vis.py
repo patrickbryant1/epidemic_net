@@ -52,10 +52,8 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     combos = all_results['combo'].unique()
     #Plot Markers
     fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
-    i=4
+    i=5
     for c in colors:
-        if c=='1_1_1_1':
-            continue
         ax.plot([1,1.8],[i]*2, color = colors[c], linewidth=4)
         ax.text(2.001,i,labels[c])
         i-=1
@@ -63,16 +61,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     ax.axis('off')
     fig.tight_layout()
     fig.savefig(outdir+'markers.png', format='png', dpi=300)
-    plt.close()
-
-    #Plot Markers
-    fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
-    ax.plot([1,1.8],[i]*2, color = colors['1_1_1_1'], linewidth=4)
-    ax.text(2.001,i,labels['1_1_1_1'])
-    ax.set_xlim([0.999,3.9])
-    ax.axis('off')
-    fig.tight_layout()
-    fig.savefig(outdir+'markers_100.png', format='png', dpi=300)
     plt.close()
 
 
@@ -104,7 +92,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                         pos+=1
 
                 #Scale to New York
-                ag_deaths = ag_deaths*(47329979/n)
+                ag_deaths = ag_deaths*(47329979/(n))
                 #Cumulative
                 #ag_deaths = np.cumsum(ag_deaths,axis=1)
                 #Average
@@ -136,26 +124,18 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
         #Total
         fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+
         ti=0
         o_deaths = observed_deaths
         print(m)
 
         ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
-        ax2.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
 
         for c in combos:
             m_deaths_av = np.average(total[ti,:,:],axis=0)
             m_deaths_std = sem(total[ti,:,:],axis=0)
-
-            if c != '1':
-                ax1.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
-                ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
-                #ax1.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-            else:
-                ax2.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
-                ax2.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
-                #ax2.plot(np.arange(total.shape[2]),m_deaths_av+m_deaths_std,color = colors[c],linewidth=0.5, linestyle='dashed')
+            ax1.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
+            ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
 
             R,p = pearsonr(o_deaths,m_deaths_av)
             print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
@@ -171,14 +151,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
         ax1.set_ylabel('Deaths')
         fig1.tight_layout()
         fig1.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
-
-        ax2.set_title('m='+str(m))
-        ax2.spines['top'].set_visible(False)
-        ax2.spines['right'].set_visible(False)
-        ax2.set_ylabel('Deaths')
-        fig2.tight_layout()
-        fig2.savefig(outdir+'deaths_'+str(m)+'_total_100.png', format='png', dpi=300)
-
         plt.close()
 
         #Investigate the relationship btw randomness and final result
@@ -424,7 +396,7 @@ except:
     result_dfs = glob.glob(resultsdir+'*.csv')
     #Loop through all results dfs
     all_results = pd.DataFrame()
-    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '1_1_2_2':4, '1_1_4_4':5, '2_2_1_1':6, '4_4_1_1':7}
+    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '1_1_2_2':4, '1_1_4_4':5, '2_2_1_1':6, '4_4_1_1':7, '3_3_3_3':8}
 
     for name in result_dfs:
         resultdf = pd.read_csv(name)
@@ -435,7 +407,7 @@ except:
         resultdf['m']=m
         resultdf['net_seed']=int(info.split('_')[2])
         resultdf['np_seed']=int(info.split('_')[3])
-        resultdf['combo']=info[-7:]
+        resultdf['combo']='_'.join(info.split('_')[-4:])
 
         #append df
         all_results = all_results.append(resultdf)
@@ -446,14 +418,15 @@ except:
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 214]
 dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 9']
-colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '4_4_4_4':'royalblue',
-        '1_1_2_2': 'springgreen', '1_1_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}
-labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4_4_4':'0-49: 25%,50+: 25%',
-        '1_1_2_2': '0-49: 100%,50+: 50%', '1_1_4_4':'0-49: 100%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
+colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '3_3_3_3':'grey', '4_4_4_4':'royalblue',
+        '1_1_2_2': 'springgreen', '2_4_4_4':'mediumseagreen', '2_2_1_1':'magenta', '4_4_1_1':'darkmagenta'}
+labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%',
+        '1_1_2_2': '0-49: 100%,50+: 50%', '2_4_4_4':'0-49: 50%,50+: 25%', '2_2_1_1':'0-49: 50%,50+: 100%',
         '4_4_1_1':'0-49: 25%,50+: 100%'}
+
 #Plot deaths
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, sm_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, sm_deaths, n, x_dates, dates,colors, labels, outdir+'deaths/')
 
 #Plot cases
 #plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')

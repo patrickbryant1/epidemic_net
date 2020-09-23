@@ -173,6 +173,7 @@ def read_and_format_data(datadir, outdir):
 def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
+
         #Network
         Graph = nx.barabasi_albert_graph(n,m,seed=net_seed)
         degrees = np.array(Graph.degree)[:,1]
@@ -190,7 +191,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
         #Lockdown mid March (15 th)
         #Epidemic starts 28 days before 10 cumulative deaths = 28 days before 10 March = 11 Feb
         #There are thus 33 days (28+5) until Lockdown
-        #Don't have to worry about this - will be taken care of by mobility relation
+        day_of_introduction = 33
 
 
         #Assign the nodes randomly according to the population shares
@@ -344,7 +345,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,num
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
             #Reduce the inf prob according to the mob data
-            m_edges = m*2*np.exp(mob_data[d-1]/100)
+            m_edges = 7*np.exp(mob_data[d-1]/100)
             if len(edges)>0:
                 edges = reconnect(edges,m_edges)
         #Calculate deaths
@@ -407,6 +408,7 @@ def reconnect(edges,m):
 
     #Get new edges
     num_new_edges = int((m*(m-1))/2)
+    print(num_new_edges)
     new_edges = []
     fetched_edges = 0 #Edge index
 
