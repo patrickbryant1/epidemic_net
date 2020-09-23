@@ -51,18 +51,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
     alphas = all_results['alpha'].unique()
-    #Plot Markers
-    fig, ax = plt.subplots(figsize=(3.5/2.54, 3/2.54))
-    i=5
-    for c in colors:
-        ax.plot([1,1.8],[i]*2, color = colors[c], linewidth=4)
-        ax.text(2.001,i,labels[c])
-        i-=1
-    ax.set_xlim([0.999,3.9])
-    ax.axis('off')
-    fig.tight_layout()
-    fig.savefig(outdir+'markers.png', format='png', dpi=300)
-    plt.close()
 
 
     #Go through all ms
@@ -78,43 +66,38 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             for c in combos:
                 m_combo_results = m_results[m_results['combo']==c]
                 ci+=1
-                #Save deaths
-                ag_deaths = np.zeros((len(alphas),len(net_seeds)*len(np_seeds),num_days))
                 ai = -1 #Alpha index
                 #Go through all alphas
                 for alpha in alphas:
+                    #Save deaths
+                    ag_deaths = np.zeros((len(net_seeds)*len(np_seeds),num_days))
                     m_combo_alpha_results = m_combo_results[m_combo_results['alpha']==alpha]
                     ai+=1
                     #go through all net seeds
+                    ni=-1 #net index
                     for net_seed in net_seeds:
                         m_combo_alpha_net_results = m_combo_alpha_results[m_combo_alpha_results['net_seed']==net_seed]
                         #go through all np seeds
                         for np_seed in np_seeds:
+                            ni+=1
                             m_combo_alpha_net_np_results = m_combo_alpha_net_results[m_combo_alpha_net_results['np_seed']==np_seed]
+                            ag_deaths[ni,:] = np.array(m_combo_alpha_net_np_results[ag+' deaths']) #Get deaths for combo and ag
 
+                        #Scale to New York
+                        ag_deaths = ag_deaths*(47329979/n)
+                        #Cumulative
+                        #ag_deaths = np.cumsum(ag_deaths,axis=1)
+                        #Average
+                        ag_deaths_av = np.average(ag_deaths,axis=0)
+                        ag_deaths_std = sem(ag_deaths,axis=0)
+                        x=np.arange(ag_deaths.shape[1])
+                        ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[str(alpha)], linewidth=1)
+                        ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                        ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                        #Add to total
 
-                            try:
-                                ag_deaths[ai,ci,:] = np.array(m_combo_alpha_net_np_results[ag+' deaths']) #Get deaths for combo and ag
+                        total[ci,ai,:,:] +=ag_deaths
 
-                            except:
-                                pdb.set_trace()
-                            ai+=1
-
-                            #Scale to New York
-                            ag_deaths = ag_deaths*(47329979/(n))
-                            #Cumulative
-                            #ag_deaths = np.cumsum(ag_deaths,axis=1)
-                            #Average
-                            ag_deaths_av = np.average(ag_deaths,axis=0)
-                            ag_deaths_std = sem(ag_deaths,axis=0)
-                            x=np.arange(ag_deaths.shape[1])
-                            ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[c], linewidth=1)
-                            ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
-                            ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color = colors[c], linewidth=0.5, linestyle='dashed')
-                            #Add to total
-
-                            total[ti,:,:] +=ag_deaths
-                            ti+=1
 
             #Format and save fig
             plt.xticks(x_dates, dates, rotation='vertical')
@@ -133,35 +116,35 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
 
         #Total
-        fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-
-        ti=0
-        o_deaths = observed_deaths
-        print(m)
-
-        ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
-
+        ci=0
         for c in combos:
-            m_deaths_av = np.average(total[ti,:,:],axis=0)
-            m_deaths_std = sem(total[ti,:,:],axis=0)
-            ax1.plot(np.arange(total.shape[2]), m_deaths_av, color = colors[c], linewidth=1)
-            ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[c],alpha=0.5)
+            fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+            o_deaths = observed_deaths
+            print(m)
+            ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
+            ai=0
+            for a in alphas:
+                m_deaths_av = np.average(total[ci,ai,:,:],axis=0)
+                m_deaths_std = sem(total[ci,ai,:,:],axis=0)
+                ax1.plot(np.arange(total.shape[3]), m_deaths_av, color = colors[str(a)], linewidth=1, label = str(a))
+                ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[str(a)],alpha=0.5)
 
-            R,p = pearsonr(o_deaths,m_deaths_av)
-            print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
-            ti+=1
+                R,p = pearsonr(o_deaths,m_deaths_av)
+                print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
 
+                ai+=1
+            ci+=1
 
-
-        ax1.set_xticks(x_dates)
-        ax1.set_xticklabels(dates, rotation='vertical')
-        ax1.set_title('m='+str(m))
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        ax1.set_ylabel('Deaths')
-        fig1.tight_layout()
-        fig1.savefig(outdir+'deaths_'+str(m)+'_total.png', format='png', dpi=300)
-        plt.close()
+            plt.legend()
+            ax1.set_xticks(x_dates)
+            ax1.set_xticklabels(dates, rotation='vertical')
+            ax1.set_title('m='+str(m))
+            ax1.spines['top'].set_visible(False)
+            ax1.spines['right'].set_visible(False)
+            ax1.set_ylabel('Deaths')
+            fig1.tight_layout()
+            fig1.savefig(outdir+'deaths_'+str(m)+'_'+str(c)+'_total.png', format='png', dpi=300)
+            plt.close()
 
         #Investigate the relationship btw randomness and final result
         i=0
@@ -429,7 +412,7 @@ except:
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 214]
 dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 9']
-colors = {'1_1_1_1':'k', '2_2_2_2':'cornflowerblue', '3_3_3_3':'grey', '4_4_4_4':'royalblue'}
+colors = {'1.1':'k', '1.2':'cornflowerblue', '1.3':'grey', '1.5':'royalblue'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths

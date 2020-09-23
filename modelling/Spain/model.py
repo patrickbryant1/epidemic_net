@@ -344,7 +344,7 @@ def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction, al
             print(d, remaining_edges[d], inf_nodes, num_infected_day[d],num_new_infections[d],len(R), num_removed[d])
             #Dynamic features - reconnect edges
             #Reduce the inf prob according to the mob data
-            m_edges = 1000*np.exp(alpha*mob_data[d-1]/100)
+            m_edges = 0.1*(n-len(R))*np.exp(alpha*mob_data[d-1]/100)
             if len(edges)>0:
                 edges = reconnect(edges,m_edges)
         #Calculate deaths
