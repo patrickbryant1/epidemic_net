@@ -399,7 +399,18 @@ outdir = args.outdir[0]
 #Get epidemic data
 epidemic_data = pd.read_csv(datadir+'Spain.csv')
 epidemic_data= epidemic_data.loc[12:225] #15 feb to 11 Sep mobility data exists
-observed_deaths = np.flip(epidemic_data['deaths'])
+observed_deaths = np.array(np.flip(epidemic_data['deaths']))
+sm_deaths = np.zeros(observed_deaths.shape[0])
+#Smooth the deaths
+#First go through the deaths and set the negative ones to the varege of that before and after
+for i in range(len(observed_deaths)):
+    if observed_deaths[i]<0:
+        observed_deaths[i] = (observed_deaths[i-1]+observed_deaths[i+1])/2
+#Do a 7day sliding window to get more even death predictions
+for i in range(7,len(sm_deaths)+1):
+    sm_deaths[i-1]=np.average(observed_deaths[i-7:i])
+sm_deaths[0:6] = sm_deaths[6] #assign the first week
+
 
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
@@ -424,12 +435,13 @@ except:
         resultdf['m']=m
         resultdf['net_seed']=int(info.split('_')[2])
         resultdf['np_seed']=int(info.split('_')[3])
-        resultdf['combo']=info[-1]
+        resultdf['combo']=info[-7:]
 
         #append df
         all_results = all_results.append(resultdf)
     #save
     all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/Spain/all_results.csv')
+
 
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 214]
@@ -441,7 +453,7 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '4_4
         '4_4_1_1':'0-49: 25%,50+: 100%'}
 #Plot deaths
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
+plot_deaths(all_results, age_groups, num_days, sm_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
 #plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')

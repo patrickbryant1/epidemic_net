@@ -88,6 +88,7 @@ def read_and_format_data(datadir, outdir):
         #Join epidemic data and mobility data
         epidemic_data = pd.merge(epidemic_data,mobility_data, left_on = 'date', right_on ='date', how = 'right')
         epidemic_data = epidemic_data.reset_index()
+
         N=len(epidemic_data)+4 #Data starts on 15 Feb, but epidemic is modelled from 11 Feb --> 4 extra days
 
         #SI
