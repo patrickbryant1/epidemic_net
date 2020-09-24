@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser(description = '''Simulate the epidemic developm
 parser.add_argument('--datadir', nargs=1, type= str, default=sys.stdin, help = 'Path to datadir.')
 parser.add_argument('--n', nargs=1, type= int, default=sys.stdin, help = 'Num nodes in net.')
 parser.add_argument('--m', nargs=1, type= int, default=sys.stdin, help = 'Num links to add for each new node in the preferential attachment graph.')
+parser.add_argument('--graph_type', nargs=1, type= str, default=sys.stdin, help = 'Graph type: random or preferential_attachment.')
 parser.add_argument('--s', nargs=1, type= str, default=sys.stdin, help = 'Spread reduction. Float to multiply infection probability with.')
 parser.add_argument('--alpha', nargs=1, type= float, default=sys.stdin, help = 'Float to multiply mobility impact with.')
 parser.add_argument('--num_initial', nargs=1, type= int, default=sys.stdin, help = 'Num initial nodes in net.')
@@ -168,11 +169,15 @@ def read_and_format_data(datadir, outdir):
         mob_data[11:]=np.average(y,axis=0)
         return serial_interval, f, N, mob_data
 
-def simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alpha,num_initial,pseudo_count,net_seed, np_seed):
+def simulate(graph_type,serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alpha,num_initial,pseudo_count,net_seed, np_seed):
         '''Simulate epidemic development on a graph network.
         '''
         #Network
-        Graph = nx.barabasi_albert_graph(n,m,seed=net_seed)
+        if graph_type == 'random':
+            Graph = nx.gnp_random_graph(n,(1/(5000/m)),seed=net_seed)
+        if graph_type == 'preferential_attachment':
+            Graph = nx.barabasi_albert_graph(n,m,seed=net_seed)
+
         degrees = np.array(Graph.degree)[:,1]
         edges = np.array(Graph.edges) #shape=n,2
         #Save edges
@@ -439,6 +444,7 @@ def reconnect(edges,m):
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]
+graph_type = args.graph_type[0]
 s = args.s[0].split('_')
 alpha = args.alpha[0]
 num_initial = args.num_initial[0]
@@ -461,4 +467,4 @@ for ag in spread_reduction:
 serial_interval, f, N, mob_data = read_and_format_data(datadir, outdir)
 #Simulate
 print('Simulating',m)
-simulate(serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alpha,num_initial,pseudo_count,net_seed, np_seed)
+simulate(graph_type,serial_interval, f, N, outdir, n, m, mob_data, spread_reduction,alpha,num_initial,pseudo_count,net_seed, np_seed)
