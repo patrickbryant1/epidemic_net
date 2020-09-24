@@ -96,20 +96,21 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                             m_combo_alpha_net_np_results = m_combo_alpha_net_results[m_combo_alpha_net_results['np_seed']==np_seed]
                             ag_deaths[ni,:] = np.array(m_combo_alpha_net_np_results[ag+' deaths']) #Get deaths for combo and ag
 
-                        #Scale to New York
-                        ag_deaths = ag_deaths*(47329979/n)
-                        #Cumulative
-                        #ag_deaths = np.cumsum(ag_deaths,axis=1)
-                        #Average
-                        ag_deaths_av = np.average(ag_deaths,axis=0)
-                        ag_deaths_std = sem(ag_deaths,axis=0)
-                        x=np.arange(ag_deaths.shape[1])
-                        ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[str(alpha)], linewidth=1)
-                        ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
-                        ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
-                        #Add to total
+                    #Scale to New York
+                    ag_deaths = ag_deaths*(47329979/n)
 
-                        total[ci,ai,:,:] +=ag_deaths
+                    #Cumulative
+                    #ag_deaths = np.cumsum(ag_deaths,axis=1)
+                    #Average
+                    ag_deaths_av = np.average(ag_deaths,axis=0)
+                    ag_deaths_std = sem(ag_deaths,axis=0)
+                    x=np.arange(ag_deaths.shape[1])
+                    ax.plot(np.arange(ag_deaths_av.shape[0]),ag_deaths_av, color = colors[str(alpha)], linewidth=1)
+                    ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                    ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                    #Add to total
+
+                    total[ci,ai,:,:] +=ag_deaths
 
 
             #Format and save fig
@@ -137,10 +138,11 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
             ai=0
             for a in alphas:
+
                 m_deaths_av = np.average(total[ci,ai,:,:],axis=0)
                 m_deaths_std = sem(total[ci,ai,:,:],axis=0)
-                ax1.plot(np.arange(total.shape[3]), m_deaths_av, color = colors[str(a)], linewidth=1, label = str(a))
-                ax1.fill_between(np.arange(total.shape[2]),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[str(a)],alpha=0.5)
+                ax1.plot(np.arange(len(m_deaths_av)), m_deaths_av, color = colors[str(a)], linewidth=1, label = str(a))
+                ax1.fill_between(np.arange(len(m_deaths_av)),m_deaths_av-m_deaths_std,m_deaths_av+m_deaths_std,color = colors[str(a)],alpha=0.5)
 
                 R,p = pearsonr(o_deaths,m_deaths_av)
                 print(labels[c]+','+str(np.average(np.absolute(o_deaths-m_deaths_av)))+','+str(R))
@@ -423,7 +425,7 @@ except:
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 224]
 dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 21']
-colors = {'1.1':'grey', '1.2':'g','1.3':'cornflowerblue'} #, '1.3':'grey', '1.5':'royalblue'}
+colors = {'1.1':'grey', '2.0':'g','3.0':'cornflowerblue'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths
