@@ -393,33 +393,25 @@ sm_deaths[0:6] = sm_deaths[6] #assign the first week
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
 #Get the results
-try:
-    all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/Spain/all_results.csv')
-    num_days = 224
+result_dfs = glob.glob(resultsdir+'*.csv')
+#Loop through all results dfs
+all_results = pd.DataFrame()
+combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '3_3_3_3':4}
 
-except:
+for name in result_dfs:
+    resultdf = pd.read_csv(name)
+    num_days = len(resultdf)
+    print(num_days)
+    info = name.split('/')[-1][:-4]
+    m = int(info.split('_')[1])
+    resultdf['m']=m
+    resultdf['net_seed']=int(info.split('_')[2])
+    resultdf['np_seed']=int(info.split('_')[3])
+    resultdf['combo']='_'.join(info.split('_')[-5:-1])
+    resultdf['alpha']=info.split('_')[-1]
 
-    result_dfs = glob.glob(resultsdir+'*.csv')
-    #Loop through all results dfs
-    all_results = pd.DataFrame()
-    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '3_3_3_3':4}
-
-    for name in result_dfs:
-        resultdf = pd.read_csv(name)
-        num_days = len(resultdf)
-        print(num_days)
-        info = name.split('/')[-1][:-4]
-        m = int(info.split('_')[1])
-        resultdf['m']=m
-        resultdf['net_seed']=int(info.split('_')[2])
-        resultdf['np_seed']=int(info.split('_')[3])
-        resultdf['combo']='_'.join(info.split('_')[-5:-1])
-        resultdf['alpha']=info.split('_')[-1]
-
-        #append df
-        all_results = all_results.append(resultdf)
-    #save
-    all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/Spain/all_results.csv')
+    #append df
+    all_results = all_results.append(resultdf)
 
 
 #xticks

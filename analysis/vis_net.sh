@@ -7,4 +7,4 @@ N5=/home/pbryant/epicemic_net/results/New_York/n10000/10000_5_0_1_1_1_1_edges.np
 
 OUTDIR=../results/network_visualization/
 
-./net_vis.py --network1 $N1 --network2 $N2 --network3 $N3 --network4 $N4 --network5 $N5 --outdir $OUTDIR
+./net_vis.py --outdir $OUTDIR
