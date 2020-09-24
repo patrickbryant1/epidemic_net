@@ -138,7 +138,6 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
             ax1.bar(np.arange(len(o_deaths)), o_deaths, alpha = 0.5, label = 'Observation')
             ai=0
             for a in alphas:
-
                 m_deaths_av = np.average(total[ci,ai,:,:],axis=0)
                 m_deaths_std = sem(total[ci,ai,:,:],axis=0)
                 ax1.plot(np.arange(len(m_deaths_av)), m_deaths_av, color = colors[str(a)], linewidth=1, label = str(a))

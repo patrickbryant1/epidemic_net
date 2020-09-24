@@ -11,6 +11,7 @@ from scipy.stats import gamma, lognorm
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib
 import pdb
 
 
@@ -144,7 +145,18 @@ def read_and_format_data(datadir, outdir):
        'transit_stations_percent_change_from_baseline',
        'workplaces_percent_change_from_baseline',
        'residential_percent_change_from_baseline']
+        mob_labels = {'retail_and_recreation_percent_change_from_baseline':'Retail',
+                      'grocery_and_pharmacy_percent_change_from_baseline':'Grocery',
+                      'parks_percent_change_from_baseline':'Parks',
+                      'transit_stations_percent_change_from_baseline':'Transit',
+                      'workplaces_percent_change_from_baseline':'Work',
+                      'residential_percent_change_from_baseline':'Residential'
+                      }
         y = np.zeros((len(mob_sectors),len(epidemic_data)))
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        x_dates = [  0,  28,  56,  84, 112, 140, 168, 196, 224]
+        dates = ['Feb 9', 'Mar 8', 'Apr 5','May 3', 'May 31', 'Jun 28','Jul 26','Aug 23', 'Sep 21']
+
         for m in range(len(mob_sectors)):
             sector = mob_sectors[m]
             mob_i = np.array(epidemic_data[sector])
@@ -158,18 +170,22 @@ def read_and_format_data(datadir, outdir):
                             mob_i[i_nan]=mob_i[i_nan-1]
                 y[m,i-1]=np.average(mob_i[i-7:i])#Assign average
             y[m,0:6] = y[m,6]#Assign first week
-            plt.plot(np.arange(y.shape[1]),y[m,:], label = sector)
+            plt.plot(np.arange(y.shape[1]),y[m,:], label = mob_labels[sector], linewidth=1)
         #Reverse residential
         y[5,:] = -y[5,:]
-        plt.plot(np.arange(y.shape[1]),np.average(y,axis=0), label = 'Average', linewidth=3, color = 'k')
-        plt.legend()
-        plt.title('Spain mobility')
+        plt.plot(np.arange(y.shape[1]),np.average(y,axis=0), label = 'Average', linewidth=2, color = 'k')
+        plt.title('New York mobility')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_xticks(x_dates)
+        ax.set_xticklabels(dates, rotation='vertical')
+        plt.ylabel('Mobility change')
         plt.tight_layout()
+        fig.savefig('mobility.png', format='png', dpi=300)
         plt.close()
 
-        mob_data = np.zeros(N)
-        mob_data[4:-10]=np.average(y,axis=0)
-        mob_data[-10:]=mob_data[-11]
+        mob_data=np.average(y,axis=0)
+        pdb.set_trace()
 
         return serial_interval, f, N, mob_data
 
@@ -443,6 +459,7 @@ def reconnect(edges,m):
 
 
 #####MAIN#####
+matplotlib.rcParams.update({'font.size': 5.5})
 args = parser.parse_args()
 n = args.n[0]
 m = args.m[0]

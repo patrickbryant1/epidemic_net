@@ -96,20 +96,20 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
                             m_combo_alpha_net_np_results = m_combo_alpha_net_results[m_combo_alpha_net_results['np_seed']==np_seed]
                             ag_deaths[ni,:] = np.array(m_combo_alpha_net_np_results[ag+' deaths']) #Get deaths for combo and ag
 
-                        #Scale to New York
-                        ag_deaths = ag_deaths*(47329979/n)
-                        #Cumulative
-                        #ag_deaths = np.cumsum(ag_deaths,axis=1)
-                        #Average
-                        ag_deaths_av = np.average(ag_deaths,axis=0)
-                        ag_deaths_std = sem(ag_deaths,axis=0)
-                        x=np.arange(ag_deaths.shape[1])
-                        ax.plot(np.arange(ag_deaths_av.shape[0]-offset),ag_deaths_av[offset:], color = colors[str(alpha)], linewidth=1)
-                        #ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
-                        #ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
-                        #Add to total
+                    #Scale to New York
+                    ag_deaths = ag_deaths*(8336817/n)
+                    #Cumulative
+                    #ag_deaths = np.cumsum(ag_deaths,axis=1)
+                    #Average
+                    ag_deaths_av = np.average(ag_deaths,axis=0)
+                    ag_deaths_std = sem(ag_deaths,axis=0)
+                    x=np.arange(ag_deaths.shape[1])
+                    ax.plot(np.arange(ag_deaths_av.shape[0]-offset),ag_deaths_av[offset:], color = colors[str(alpha)], linewidth=1)
+                    #ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av-ag_deaths_std, color = colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                    #ax.plot(np.arange(ag_deaths_av.shape[0]), ag_deaths_av+ag_deaths_std, color =colors[str(alpha)], linewidth=0.5, linestyle='dashed')
+                    #Add to total
 
-                        total[ci,ai,:,:] +=ag_deaths
+                    total[ci,ai,:,:] +=ag_deaths
 
 
             #Format and save fig
@@ -388,39 +388,33 @@ sm_deaths[0:6] = sm_deaths[6] #assign the first week
 
 #Age groups
 age_groups = ['0-19','20-49','50-69','70+']
+
 #Get the results
-try:
-    all_results = pd.read_csv('/home/pbryant/results/COVID19/epidemic_net/New_York/all_results.csv')
-    num_days = 207
+result_dfs = glob.glob(resultsdir+'*.csv')
+#Loop through all results dfs
+all_results = pd.DataFrame()
+combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '3_3_3_3':4}
+#Get the results
+for name in result_dfs:
+    resultdf = pd.read_csv(name)
+    num_days = len(resultdf)
+    print(num_days)
+    info = name.split('/')[-1][:-4]
+    m = int(info.split('_')[1])
+    resultdf['m']=m
+    resultdf['net_seed']=int(info.split('_')[2])
+    resultdf['np_seed']=int(info.split('_')[3])
+    resultdf['combo']='_'.join(info.split('_')[-5:-1])
+    resultdf['alpha']=info.split('_')[-1]
 
-except:
+    #append df
+    all_results = all_results.append(resultdf)
 
-    result_dfs = glob.glob(resultsdir+'*.csv')
-    #Loop through all results dfs
-    all_results = pd.DataFrame()
-    combos = {'1_1_1_1':1, '2_2_2_2':2, '4_4_4_4':3, '3_3_3_3':4}
-
-    for name in result_dfs:
-        resultdf = pd.read_csv(name)
-        num_days = len(resultdf)
-        info = name.split('/')[-1][:-4]
-        m = int(info.split('_')[1])
-        resultdf['m']=m
-        resultdf['net_seed']=int(info.split('_')[2])
-        resultdf['np_seed']=int(info.split('_')[3])
-        resultdf['combo']='_'.join(info.split('_')[-5:-1])
-        resultdf['alpha']=info.split('_')[-1]
-
-
-        #append df
-        all_results = all_results.append(resultdf)
-    #save
-    all_results.to_csv('/home/pbryant/results/COVID19/epidemic_net/New_York/all_results.csv')
 
 #xticks
 x_dates = [  0,  28,  56,  84, 112, 140, 168, 197]
 dates = ['Feb 29', 'Mar 28', 'Apr 25','May 23', 'Jun 20','Jul 18','Aug 15', 'Sep 13']
-colors = {'1.1':'grey', '1.2':'g','1.3':'cornflowerblue', '1.4':'royalblue'} #, '1.3':'grey', '1.5':'royalblue'}
+colors = {'1.0':'grey', '2.0':'g','3.0':'cornflowerblue'}
 labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3_3_3':'0-49: 33%,50+: 33%', '4_4_4_4':'0-49: 25%,50+: 25%'}
 
 #Plot deaths
