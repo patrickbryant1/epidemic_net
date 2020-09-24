@@ -174,7 +174,7 @@ def read_and_format_data(datadir, outdir):
         #Reverse residential
         y[5,:] = -y[5,:]
         plt.plot(np.arange(y.shape[1]),np.average(y,axis=0), label = 'Average', linewidth=2, color = 'k')
-        plt.title('New York mobility')
+        plt.title('Spain mobility')
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set_xticks(x_dates)
