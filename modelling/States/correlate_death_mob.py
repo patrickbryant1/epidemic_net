@@ -109,24 +109,6 @@ def format_data(us_deaths, mobility_data, population_sizes):
         #Save to formatted data
         formatted_data = pd.concat([formatted_data, regional_epidemic_data])
 
-
-        #reverse resideantial
-        regional_mob_data[5]=-regional_mob_data[5]
-        #Average
-        av_mob = np.average(regional_mob_data,axis=0)
-        #Plot
-        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-        ax2 = ax.twinx()
-        plt.bar(np.arange(len(sm_deaths)),sm_deaths, color = 'grey')
-        ax2.plot(np.arange(len(av_mob)),av_mob, color = 'k')
-        plt.ylabel('Deaths')
-        plt.title(region)
-        fig.tight_layout()
-        ax.spines['top'].set_visible(False)
-        ax2.spines['top'].set_visible(False)
-        fig.savefig(outdir+region+'.png', dpi=300, format='png')
-
-
     return formatted_data
 
 
@@ -164,7 +146,7 @@ def correlate(formatted_data):
         av_mob = np.average(regional_mob_data,axis=0)
         #ax2.plot(np.arange(len(regional_data['date'])),av_mob, color = 'k', alpha = 0.1)
 
-        s_max = 150
+        s_max = 100
         C_death_delay = np.zeros(s_max) #Save covariance btw signals for different delays in deaths
         #Loop through all s and calculate correlations
         for s in range(s_max): #s is the number of future days to correlate the death and mobility data over
@@ -180,11 +162,38 @@ def correlate(formatted_data):
 
         #Check the max corr
         state_max = np.where(C_death_delay==max(C_death_delay))[0][0]
+        if state_max ==0:
+            state_max=1
+            print(region)
+
         ax2.plot(np.arange(len(av_mob)-state_max), av_mob[:-state_max], color= 'b',linewidth=1)
         ax2_2.plot(np.arange(len(av_mob)-state_max), np.log10(deaths[state_max:]), color = 'r', linewidth=1)
 
         #Plot mob vs deaths
         ax3.scatter(av_mob[:-state_max],np.log10(deaths[state_max:]), color= 'b',s=1)
+
+        #Plot state
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        ax_x = ax.twinx()
+        sm_deaths = np.array(regional_data['deaths'])
+        zeros = np.zeros(len(sm_deaths)+state_max)
+        zeros[:-state_max]=sm_deaths
+        #Deaths
+        ax.bar(np.arange(len(zeros)),zeros, color = 'grey')
+        zeros = np.zeros(len(sm_deaths)+state_max)
+        zeros[state_max:]=av_mob
+        min_mob_i = np.where(zeros==min(av_mob))[0][0]-state_max
+        ax_x.axvline(min_mob_i, color = 'r', linewidth=0.8)
+        #Mobility
+        ax_x.plot(np.arange(len(zeros)),zeros, color = 'k', linewidth = 1)
+        ax.set_ylabel('Deaths')
+        ax_x.set_ylabel('Mobility')
+        ax_x.set_ylim([-40,40])
+        ax.set_title(region+'|'+str(state_max))
+        fig.tight_layout()
+        ax.spines['top'].set_visible(False)
+        ax_x.spines['top'].set_visible(False)
+        fig.savefig(outdir+region+'.png', dpi=300, format='png')
 
 
     ax1.set_xlabel('Delay in deaths (days)')
