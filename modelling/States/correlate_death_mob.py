@@ -130,9 +130,11 @@ def correlate(formatted_data):
 
     fig1, ax1 = plt.subplots(figsize=(16/2.54, 9/2.54))
     fig2, ax2 = plt.subplots(figsize=(16/2.54, 9/2.54))
+    ax2_2 = ax2.twinx()
+    fig3, ax3 = plt.subplots(figsize=(16/2.54, 9/2.54))
     for region in subregions:
         regional_data = formatted_data[formatted_data['sub_region_1']==region]
-        deaths = np.array(regional_data['deaths'])
+        deaths = np.array(regional_data['deaths_per_population'])
 
         #ax1.plot(np.arange(len(regional_data['date'])),np.log10(regional_data['deaths_per_population']), color = 'grey', alpha =0.1)
         regional_mob_data = []
@@ -145,7 +147,7 @@ def correlate(formatted_data):
         av_mob = np.average(regional_mob_data,axis=0)
         #ax2.plot(np.arange(len(regional_data['date'])),av_mob, color = 'k', alpha = 0.1)
 
-        s_max = 60
+        s_max = 150
         C_death_delay = np.zeros(s_max) #Save covariance btw signals for different delays in deaths
         #Loop through all s and calculate correlations
         for s in range(s_max): #s is the number of future days to correlate the death and mobility data over
@@ -156,10 +158,41 @@ def correlate(formatted_data):
                 cs = pearsonr(av_mob[:-s],deaths[s:])[0]
             #Assign correlation
             C_death_delay[s]=cs
+        #Plot delay and PCC
+        ax1.plot(np.arange(s_max),C_death_delay,linewidth=1)
+
+        #Check the max corr
+        state_max = np.where(C_death_delay==max(C_death_delay))[0][0]
+        ax2.plot(np.arange(len(av_mob)-state_max), av_mob[:-state_max], color= 'b',linewidth=1)
+        ax2_2.plot(np.arange(len(av_mob)-state_max), np.log10(deaths[state_max:]), color = 'r', linewidth=1)
+
+        #Plot mob vs deaths
+        ax3.scatter(av_mob[:-state_max],np.log10(deaths[state_max:]), color= 'b',s=1)
 
 
+    ax1.set_xlabel('Delay in deaths (days)')
+    ax1.set_ylabel('PCC')
+    fig1.tight_layout()
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    fig1.savefig(outdir+'corr_delay', dpi=300, format='png')
 
-        pdb.set_trace()
+    ax2.set_xlabel('Day')
+    ax2.set_ylabel('Mobility')
+    ax2_2.set_ylabel('log(Deaths/Population)')
+    fig2.tight_layout()
+    ax2.spines['top'].set_visible(False)
+    ax2_2.spines['top'].set_visible(False)
+    fig2.savefig(outdir+'mob_deaths', dpi=300, format='png')
+
+    ax3.set_xlabel('Mobility')
+    ax3.set_ylabel('Deaths/Population')
+    fig3.tight_layout()
+    ax3.spines['top'].set_visible(False)
+    ax3.spines['right'].set_visible(False)
+    fig3.savefig(outdir+'mob_vs_deaths', dpi=300, format='png')
+
+    pdb.set_trace()
 #####MAIN#####
 args = parser.parse_args()
 us_deaths = pd.read_csv(args.us_deaths[0])
