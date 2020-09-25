@@ -89,6 +89,7 @@ def format_data(us_deaths, mobility_data, population_sizes):
         regional_epidemic_data['deaths']=sm_deaths
         #Covariates (mobility data from Google) - assign the same shape as others (N2)
         #Construct a 1-week sliding average to smooth the mobility data
+        regional_mob_data = []
         for name in mob_sectors:
             mob_i = np.array(regional_epidemic_data[name])
             y = np.zeros(len(regional_epidemic_data))
@@ -102,11 +103,28 @@ def format_data(us_deaths, mobility_data, population_sizes):
                 y[i-1]=np.average(mob_i[i-7:i])#Assign average
             y[0:6] = y[6]#Assign first week
             regional_epidemic_data[name]=y
-
+            regional_mob_data.append(y)
         #Get deaths per population size
         regional_epidemic_data['deaths_per_population'] = sm_deaths/population_sizes[population_sizes['State']==region]['Population'].values[0]
         #Save to formatted data
         formatted_data = pd.concat([formatted_data, regional_epidemic_data])
+
+
+        #reverse resideantial
+        regional_mob_data[5]=-regional_mob_data[5]
+        #Average
+        av_mob = np.average(regional_mob_data,axis=0)
+        #Plot
+        fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+        ax2 = ax.twinx()
+        plt.bar(np.arange(len(sm_deaths)),sm_deaths, color = 'grey')
+        ax2.plot(np.arange(len(av_mob)),av_mob, color = 'k')
+        plt.ylabel('Deaths')
+        plt.title(region)
+        fig.tight_layout()
+        ax.spines['top'].set_visible(False)
+        ax2.spines['top'].set_visible(False)
+        fig.savefig(outdir+region+'.png', dpi=300, format='png')
 
 
     return formatted_data
@@ -135,7 +153,6 @@ def correlate(formatted_data):
     for region in subregions:
         regional_data = formatted_data[formatted_data['sub_region_1']==region]
         deaths = np.array(regional_data['deaths_per_population'])
-
         #ax1.plot(np.arange(len(regional_data['date'])),np.log10(regional_data['deaths_per_population']), color = 'grey', alpha =0.1)
         regional_mob_data = []
         for sector in mob_sectors:
@@ -192,8 +209,13 @@ def correlate(formatted_data):
     ax3.spines['right'].set_visible(False)
     fig3.savefig(outdir+'mob_vs_deaths', dpi=300, format='png')
 
-    pdb.set_trace()
+    montage = ''
+    for region in subregions:
+        montage += region+ '.png '
+    print(montage)
 #####MAIN#####
+#Set font size
+matplotlib.rcParams.update({'font.size': 7})
 args = parser.parse_args()
 us_deaths = pd.read_csv(args.us_deaths[0])
 mobility_data = pd.read_csv(args.mobility_data[0])
