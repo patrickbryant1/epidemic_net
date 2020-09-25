@@ -11,7 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import pystan
+from scipy.stats import pearsonr
 
 import pdb
 
@@ -32,12 +32,23 @@ def format_data(us_deaths, mobility_data, population_sizes):
     1. Smoothing death and mobility data
     2. Merging them on date
     '''
-    pdb.set_trace()
+
+    #Convert to datetime
+    mobility_data['date']=pd.to_datetime(mobility_data['date'], format='%Y/%m/%d')
+    mob_sectors = ['retail_and_recreation_percent_change_from_baseline',
+   'grocery_and_pharmacy_percent_change_from_baseline',
+   'parks_percent_change_from_baseline',
+   'transit_stations_percent_change_from_baseline',
+   'workplaces_percent_change_from_baseline',
+   'residential_percent_change_from_baseline']
+
+    formatted_data = pd.DataFrame()
     #Get data by state
-    for c in range(len(subregions)):
+    subregions =  mobility_data['sub_region_1'].unique()[1:]
+    for i in range(len(subregions)):
 
         #State
-        region =subregions[c]
+        region =subregions[i]
         #Get region epidemic data
         regional_deaths = us_deaths[us_deaths['Province_State']== region]
         cols = regional_deaths.columns
@@ -45,22 +56,123 @@ def format_data(us_deaths, mobility_data, population_sizes):
         deaths_per_day = []
         dates = cols[12:]
         #First deaths
-        deaths_per_day.append(np.sum(regional_deaths[dates[0]]))
-        for d in range(1,len(dates)):#The first 12 columns are not deaths
+        deaths_per_day.append(np.sum(regional_deaths[dates[0]])) #The first 12 columns are not deaths
+        for d in range(1,len(dates)):
             deaths_per_day.append(np.sum(regional_deaths[dates[d]])-np.sum(regional_deaths[dates[d-1]]))
 
+        #Create dataframe
+        regional_epidemic_data = pd.DataFrame()
+        regional_epidemic_data['date']=dates
+
+        #Convert to datetime
+        regional_epidemic_data['date'] = pd.to_datetime(regional_epidemic_data['date'], format='%m/%d/%y')
+        regional_epidemic_data['deaths']=deaths_per_day
+
+        #Sort on date
+        regional_epidemic_data = regional_epidemic_data.sort_values(by='date')
+        #Regional mobility data
+        region_mob_data = mobility_data[mobility_data['sub_region_1']==region]
+        region_mob_data = region_mob_data[region_mob_data['sub_region_2'].isna()]
+        #Merge epidemic data with mobility data
+        regional_epidemic_data = regional_epidemic_data.merge(region_mob_data, left_on = 'date', right_on ='date', how = 'right')
+
+        #Smooth deaths
+        #Number of deaths
+        deaths = np.array(regional_epidemic_data['deaths'])
+        sm_deaths = np.zeros(len(deaths))
+        #Do a 7day sliding window to get more even death predictions
+        for i in range(7,len(regional_epidemic_data)+1):
+            sm_deaths[i-1]=np.average(deaths[i-7:i])
+        sm_deaths[0:6] = sm_deaths[6]
+
+        #Add to df
+        regional_epidemic_data['deaths']=sm_deaths
+        #Covariates (mobility data from Google) - assign the same shape as others (N2)
+        #Construct a 1-week sliding average to smooth the mobility data
+        for name in mob_sectors:
+            mob_i = np.array(regional_epidemic_data[name])
+            y = np.zeros(len(regional_epidemic_data))
+            for i in range(7,len(mob_i)+1):
+                #Check that there are no NaNs
+                if np.isnan(mob_i[i-7:i]).any():
+                    #If there are NaNs, loop through and replace with value from prev date
+                    for i_nan in range(i-7,i):
+                        if np.isnan(mob_i[i_nan]):
+                            mob_i[i_nan]=mob_i[i_nan-1]
+                y[i-1]=np.average(mob_i[i-7:i])#Assign average
+            y[0:6] = y[6]#Assign first week
+            regional_epidemic_data[name]=y
+
+        #Get deaths per population size
+        regional_epidemic_data['deaths_per_population'] = sm_deaths/population_sizes[population_sizes['State']==region]['Population'].values[0]
+        #Save to formatted data
+        formatted_data = pd.concat([formatted_data, regional_epidemic_data])
+
+
+    return formatted_data
 
 
 
 
+def correlate(formatted_data):
+    '''Correlate the mobility and deaths
+    '''
+
+
+    mob_sectors = {'retail_and_recreation_percent_change_from_baseline':'grey',
+   'grocery_and_pharmacy_percent_change_from_baseline':'b',
+   'parks_percent_change_from_baseline':'g',
+   'transit_stations_percent_change_from_baseline':'orange',
+   'workplaces_percent_change_from_baseline':'magenta',
+   'residential_percent_change_from_baseline':'k'}
+
+    subregions = formatted_data['sub_region_1'].unique()
+
+    fig1, ax1 = plt.subplots(figsize=(16/2.54, 9/2.54))
+    fig2, ax2 = plt.subplots(figsize=(16/2.54, 9/2.54))
+    for region in subregions:
+        regional_data = formatted_data[formatted_data['sub_region_1']==region]
+        deaths = np.array(regional_data['deaths'])
+
+        #ax1.plot(np.arange(len(regional_data['date'])),np.log10(regional_data['deaths_per_population']), color = 'grey', alpha =0.1)
+        regional_mob_data = []
+        for sector in mob_sectors:
+            regional_mob_data.append(regional_data[sector])
+        regional_mob_data = np.array(regional_mob_data)
+        #reverse resideantial
+        regional_mob_data[5]=-regional_mob_data[5]
+        #Average
+        av_mob = np.average(regional_mob_data,axis=0)
+        #ax2.plot(np.arange(len(regional_data['date'])),av_mob, color = 'k', alpha = 0.1)
+
+        s_max = 60
+        C_death_delay = np.zeros(s_max) #Save covariance btw signals for different delays in deaths
+        #Loop through all s and calculate correlations
+        for s in range(s_max): #s is the number of future days to correlate the death and mobility data over
+            if s == 0:
+                cs = pearsonr(av_mob,deaths)[0]
+
+            else:
+                cs = pearsonr(av_mob[:-s],deaths[s:])[0]
+            #Assign correlation
+            C_death_delay[s]=cs
 
 
 
-
-
+        pdb.set_trace()
 #####MAIN#####
 args = parser.parse_args()
 us_deaths = pd.read_csv(args.us_deaths[0])
 mobility_data = pd.read_csv(args.mobility_data[0])
 population_sizes = pd.read_csv(args.population_sizes[0])
 outdir = args.outdir[0]
+
+#Format data
+try:
+    formatted_data = pd.read_csv(outdir+'formatted_data.csv')
+except:
+    formatted_data = format_data(us_deaths, mobility_data, population_sizes)
+    formatted_data.to_csv(outdir+'formatted_data.csv')
+
+#Correlate
+correlate(formatted_data)
