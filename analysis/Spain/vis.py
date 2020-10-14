@@ -192,89 +192,73 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     net_seeds = all_results['net_seed'].unique()
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
+    alphas = all_results['alpha'].unique()
 
     #Go through all ms
     for m in ms:
+
         m_results = all_results[all_results['m']==m]
         #Go through all age_groups
-        total = np.zeros((len(colors.keys()),len(net_seeds)*len(np_seeds),int(num_days)))
+        total = np.zeros((len(combos),len(alphas),len(net_seeds)*len(np_seeds),int(num_days)))
         for ag in age_groups:
-            fig, ax = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+            fig, ax = plt.subplots(figsize=(4.5/2.54, 4.5/2.54))
             #Go through all combos
-            ti=0
+            ci = -1 #combo index
             for c in combos:
                 m_combo_results = m_results[m_results['combo']==c]
-                #cases
-                ag_cases = np.zeros((len(net_seeds)*len(np_seeds),num_days))
-                pos = 0
-                for net_seed in net_seeds:
-                    m_combo_net_results = m_combo_results[m_combo_results['net_seed']==net_seed]
-                    for np_seed in np_seeds:
-                        m_combo_np_net_results = m_combo_net_results[m_combo_net_results['np_seed']==np_seed]
-                        #Offset
-                        offset=len(m_combo_np_net_results)-num_days
-                        try:
-                            ag_cases[pos,:] = np.array(m_combo_np_net_results[ag+' cases'][offset:]) #Get deaths for combo and ag
-                        except:
-                            pdb.set_trace()
-                        pos+=1
+                ci+=1
+                ai = -1 #Alpha index
+                #Go through all alphas
+                for alpha in alphas:
+                    #Save cases
+                    ag_cases = np.zeros((len(net_seeds)*len(np_seeds),num_days))
+                    m_combo_alpha_results = m_combo_results[m_combo_results['alpha']==alpha]
+                    ai+=1
+                    #go through all net seeds
+                    ni=-1 #net index
+                    for net_seed in net_seeds:
+                        m_combo_alpha_net_results = m_combo_alpha_results[m_combo_alpha_results['net_seed']==net_seed]
+                        #go through all np seeds
+                        for np_seed in np_seeds:
+                            ni+=1
+                            m_combo_alpha_net_np_results = m_combo_alpha_net_results[m_combo_alpha_net_results['np_seed']==np_seed]
+                            ag_cases[ni,:] = np.array(m_combo_alpha_net_np_results[ag+' cases']) #Get deaths for combo and ag
 
-                ag_cases_av = 100*np.cumsum(np.average(ag_cases,axis=0))/n
-                ag_cases_std = 100*np.cumsum(sem(ag_cases,axis=0))/n
-                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av, color = colors[c], linewidth=1)
-                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av-ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax.plot(np.arange(ag_cases.shape[1]),ag_cases_av+ag_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-                #Add to total
-                total[ti,:,:] += ag_cases
-                ti+=1
-            #Format and save fig
-            ax.set_xlabel('Day')
-            ax.set_ylabel('% Cases')
-            title= 'Ages '+ag+'|m='+str(m)
-            ax.set_title(title)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            fig.tight_layout()
-            fig.savefig(outdir+'cases_'+str(m)+'_'+ag+'.png', format='png', dpi=300)
-            plt.close()
+
+                    #Cumulative
+                    ag_cases_av = 100*np.cumsum(np.average(ag_cases,axis=0))/n
+                    ag_cases_std = 100*np.cumsum(sem(ag_cases,axis=0))/n
+
+
+                    #Add to total
+                    total[ci,ai,:,:] +=ag_cases_av
+
 
 
         #Total
-        fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-        ti=0
+        ci=0
         for c in combos:
-            m_cases_av = 100*(np.average(total[ti,:,:],axis=0))/n
-            m_cases_std = 100*(sem(total[ti,:,:],axis=0))/n
-            if c != '1_1_1_1':
-                #plot
-                ax1.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
-                ax1.fill_between(np.arange(total.shape[2]),m_cases_av-m_cases_std,m_cases_av+m_cases_std,color = colors[c],alpha=0.5)
-                #ax1.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-            else:
-                ax2.plot(np.arange(total.shape[2]), m_cases_av, color = colors[c], linewidth=1)
-                ax2.plot(np.arange(total.shape[2]),m_cases_av-m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax2.plot(np.arange(total.shape[2]),m_cases_av+m_cases_std,color = colors[c],linewidth=0.5, linestyle='dashed')
-            ti+=1
+            fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+            print(m)
+            ai=0
+            for a in alphas:
+                m_cases_av = np.average(total[ci,ai,:,:],axis=0)
+                m_cases_std = sem(total[ci,ai,:,:],axis=0)
+                ax1.plot(np.arange(m_cases_av.shape[0]), m_cases_av, color = colors[str(a)], linewidth=1, label = str(a))
+                ax1.fill_between(np.arange(m_cases_av.shape[0]),m_cases_av-m_cases_std,m_cases_av+m_cases_std,color = colors[str(a)],alpha=0.5)
 
-        ax1.set_xticks(x_dates)
-        ax1.set_xticklabels(dates, rotation='vertical')
-        ax1.set_title('m='+str(m))
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        ax1.set_xlabel('Day')
-        ax1.set_ylabel('% Cases')
-        fig1.tight_layout()
-        fig1.savefig(outdir+'cases_'+str(m)+'_total.png', format='png', dpi=300)
+                ai+=1
+            ci+=1
 
-        ax2.set_title('m='+str(m))
-        ax2.spines['top'].set_visible(False)
-        ax2.spines['right'].set_visible(False)
-        ax2.set_xlabel('Day')
-        ax2.set_ylabel('% Cases')
-        fig2.tight_layout()
-        fig2.savefig(outdir+'cases_'+str(m)+'_total_100.png', format='png', dpi=300)
-        plt.close()
+            # ax1.set_xticks(x_dates)
+            # ax1.set_xticklabels(dates, rotation='vertical')
+            ax1.set_title('m='+str(m)+'|'+labels[c])
+            ax1.spines['top'].set_visible(False)
+            ax1.spines['right'].set_visible(False)
+            ax1.set_ylabel('% Cases')
+            fig1.tight_layout()
+            fig1.savefig(outdir+'cases_'+str(m)+'_'+str(c)+'_total.png', format='png', dpi=300)
+            plt.close()
 
     return None
 
@@ -421,10 +405,10 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3
 
 #Plot deaths
 #Plot deaths
-plot_deaths(all_results, age_groups, num_days, sm_deaths, n, x_dates, dates,colors, labels, outdir+'deaths/')
+#plot_deaths(all_results, age_groups, num_days, sm_deaths, n, x_dates, dates,colors, labels, outdir+'deaths/')
 
 #Plot cases
-#plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
 
 #Plot the edges
 #plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')

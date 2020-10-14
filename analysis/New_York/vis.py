@@ -253,7 +253,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
             ax1.set_title('m='+str(m)+'|'+labels[c])
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
-            ax1.set_ylabel('Cases')
+            ax1.set_ylabel('% Cases')
             fig1.tight_layout()
             fig1.savefig(outdir+'cases_'+str(m)+'_'+str(c)+'_total.png', format='png', dpi=300)
             plt.close()
