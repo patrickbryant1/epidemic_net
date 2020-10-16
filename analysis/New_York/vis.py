@@ -181,7 +181,7 @@ def plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, 
 
     return None
 
-def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
+def plot_cases(all_results, age_groups, num_days, n, colors, labels, x_dates, dates, outdir):
     '''Plot the cases per age group with different links (m)
     and reductions in inf_prob
     '''
@@ -191,7 +191,7 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     np_seeds = all_results['np_seed'].unique()
     combos = all_results['combo'].unique()
     alphas = all_results['alpha'].unique()
-
+    offset = num_days-198 #Only 198 days death data
     #Go through all ms
     for m in ms:
 
@@ -240,16 +240,16 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
             print(m)
             ai=0
             for a in alphas:
-                m_cases_av = np.average(total[ci,ai,:,:],axis=0)
-                m_cases_std = sem(total[ci,ai,:,:],axis=0)
+                m_cases_av = np.average(total[ci,ai,:,:],axis=0)[offset:]
+                m_cases_std = sem(total[ci,ai,:,:],axis=0)[offset:]
                 ax1.plot(np.arange(m_cases_av.shape[0]), m_cases_av, color = colors[str(a)], linewidth=1, label = str(a))
                 ax1.fill_between(np.arange(m_cases_av.shape[0]),m_cases_av-m_cases_std,m_cases_av+m_cases_std,color = colors[str(a)],alpha=0.5)
 
                 ai+=1
             ci+=1
 
-            # ax1.set_xticks(x_dates)
-            # ax1.set_xticklabels(dates, rotation='vertical')
+            ax1.set_xticks(x_dates)
+            ax1.set_xticklabels(dates, rotation='vertical')
             ax1.set_title('m='+str(m)+'|'+labels[c])
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
@@ -261,58 +261,85 @@ def plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir):
     return None
 
 
-def plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir):
+def plot_degrees(all_results, age_groups, num_days, n, colors, labels, x_dates, dates, outdir):
     '''Plot the max degree removed each day divided by the maximum degree in the net
     '''
 
+
     ms = all_results['m'].unique()
-    seeds = all_results['seed'].unique()
+    net_seeds = all_results['net_seed'].unique()
+    np_seeds = all_results['np_seed'].unique()
+    combos = all_results['combo'].unique()
+    alphas = all_results['alpha'].unique()
+    offset = num_days-198 #Only 198 days death data
     #Go through all ms
     for m in ms:
+
         m_results = all_results[all_results['m']==m]
-        #Total
+        #Go through all age_groups
+        total = np.zeros((len(combos),len(alphas),len(net_seeds)*len(np_seeds),int(num_days)))
 
-        fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-        fig2, ax2 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
-        combo=1
-        fetched_y = []
-        for c in colors:
+
+        #Go through all combos
+        ci = -1 #combo index
+        for c in combos:
             m_combo_results = m_results[m_results['combo']==c]
-            degrees = np.zeros((len(seeds),num_days))
-            for seed in seeds:
-                m_combo_seed_results = m_combo_results[m_combo_results['seed']==seed]
-                degrees[seed,:] = np.array(m_combo_seed_results['perc_above_left']) #Get cases for combo and ag
-            #Average over seeds
-            degrees_av = 100*np.average(degrees,axis=0)
-            degrees_std = 100*np.std(degrees,axis=0)
-            if c != '1_1_1_1':
-                ax1.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
-                ax1.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax1.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
-            else:
-                ax2.plot(np.arange(len(degrees_av)),degrees_av, color = colors[c], linewidth=1)
-                ax2.plot(np.arange(len(degrees_av)),degrees_av-degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
-                ax2.plot(np.arange(len(degrees_av)),degrees_av+degrees_std, color = colors[c],linewidth=0.5, linestyle='dashed')
-        ax1.set_xlim([0,25])
-        ax1.set_title('m='+str(m))
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        ax1.set_xlabel('Day')
-        ax1.set_ylabel('Nodes left above t (%)')
-        fig1.tight_layout()
-        fig1.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
+            ci+=1
+            ai = -1 #Alpha index
+            #Go through all alphas
+            for alpha in alphas:
+                #Save cases
+                ag_deg = np.zeros((len(net_seeds)*len(np_seeds),num_days))
+                m_combo_alpha_results = m_combo_results[m_combo_results['alpha']==alpha]
+                ai+=1
+                #go through all net seeds
+                ni=-1 #net index
+                for net_seed in net_seeds:
+                    m_combo_alpha_net_results = m_combo_alpha_results[m_combo_alpha_results['net_seed']==net_seed]
+                    #go through all np seeds
+                    for np_seed in np_seeds:
+                        ni+=1
+                        m_combo_alpha_net_np_results = m_combo_alpha_net_results[m_combo_alpha_net_results['np_seed']==np_seed]
+                        ag_deg[ni,:] = np.array(m_combo_alpha_net_np_results['perc_above_left']) #Get deaths for combo and ag
 
-        ax2.set_xlim([0,25])
-        ax2.set_title('m='+str(m))
-        ax2.spines['top'].set_visible(False)
-        ax2.spines['right'].set_visible(False)
-        ax2.set_xlabel('Day')
-        ax2.set_ylabel('Nodes left above t (%)')
-        fig2.tight_layout()
-        fig2.savefig(outdir+'deg_'+str(m)+'_total.png', format='png', dpi=300)
-        plt.close()
+
+                #Cumulative
+                ag_deg_av = 100*np.cumsum(np.average(ag_deg,axis=0))/n
+                ag_deg_std = 100*np.cumsum(sem(ag_deg,axis=0))/n
+
+
+                #Add to total
+                total[ci,ai,:,:] +=ag_deg_av
+
+
+
+        #Total
+        ci=0
+        for c in combos:
+            fig1, ax1 = plt.subplots(figsize=(4.5/2.54, 4/2.54))
+            print(m)
+            ai=0
+            for a in alphas:
+                m_deg_av = np.average(total[ci,ai,:,:],axis=0)[offset:]
+                m_deg_std = sem(total[ci,ai,:,:],axis=0)[offset:]
+                ax1.plot(np.arange(m_deg_av.shape[0]), m_deg_av, color = colors[str(a)], linewidth=1, label = str(a))
+                ax1.fill_between(np.arange(m_deg_av.shape[0]),m_deg_av-m_deg_std,m_deg_av+m_deg_std,color = colors[str(a)],alpha=0.5)
+
+                ai+=1
+            ci+=1
+
+            # ax1.set_xticks(x_dates)
+            # ax1.set_xticklabels(dates, rotation='vertical')
+            ax1.set_title('m='+str(m)+'|'+labels[c])
+            ax1.spines['top'].set_visible(False)
+            ax1.spines['right'].set_visible(False)
+            ax1.set_ylabel('% above t left')
+            fig1.tight_layout()
+            fig1.savefig(outdir+'deg_'+str(m)+'_'+str(c)+'_total.png', format='png', dpi=300)
+            plt.close()
 
     return None
+
 #####MAIN#####
 #Set font size
 matplotlib.rcParams.update({'font.size': 5.5})
@@ -371,12 +398,10 @@ labels = {'1_1_1_1':'0-49: 100%,50+: 100%', '2_2_2_2':'0-49: 50%,50+: 50%', '3_3
 #plot_deaths(all_results, age_groups, num_days, observed_deaths, n, x_dates, dates, colors, labels, outdir+'deaths/')
 
 #Plot cases
-plot_cases(all_results, age_groups, num_days, n, colors, labels, outdir+'cases/')
+#plot_cases(all_results, age_groups, num_days, n, colors, labels, x_dates, dates, outdir+'cases/')
 
-#Plot the edges
-#plot_edges(all_results, age_groups, num_days,  n, colors, labels, outdir+'edges/')
 
 #Plot the max degree reomved each day
-#plot_degrees(all_results, age_groups, num_days, n, colors, labels, outdir+'degrees/')
+plot_degrees(all_results, age_groups, num_days, n, colors, labels, x_dates, dates, outdir+'degrees/')
 #Plot the number removed - the ones that have issued spread
 #plot_epidemic(np.arange(num_days), 100*np.array(num_removed)/n,'Days since initial spread','% Active spreaders','Active spreaders',m, outdir+'active_spreaders_'+str(m)+suffix)
