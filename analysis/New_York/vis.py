@@ -304,14 +304,12 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, x_dates, 
 
 
                 #Cumulative
-                ag_deg_av = 100*np.cumsum(np.average(ag_deg,axis=0))/n
-                ag_deg_std = 100*np.cumsum(sem(ag_deg,axis=0))/n
+                ag_deg_av = 100*np.average(ag_deg,axis=0)
+                ag_deg_std =100*(sem(ag_deg,axis=0))
 
 
                 #Add to total
                 total[ci,ai,:,:] +=ag_deg_av
-
-
 
         #Total
         ci=0
@@ -328,8 +326,8 @@ def plot_degrees(all_results, age_groups, num_days, n, colors, labels, x_dates, 
                 ai+=1
             ci+=1
 
-            # ax1.set_xticks(x_dates)
-            # ax1.set_xticklabels(dates, rotation='vertical')
+            ax1.set_xticks(x_dates)
+            ax1.set_xticklabels(dates, rotation='vertical')
             ax1.set_title('m='+str(m)+'|'+labels[c])
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
